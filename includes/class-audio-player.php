@@ -135,24 +135,12 @@ class EchoAds_Audio_Player {
             </div>
             
             <div class="audio-controls">
-                <button class="control-btn previous-btn" id="<?php echo esc_attr( $unique_id ); ?>-previous" title="Previous Track">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" fill="currentColor"/>
-                    </svg>
-                </button>
-                
                 <button class="play-pause-btn" id="<?php echo esc_attr( $unique_id ); ?>-play-pause" title="Play/Pause">
                     <svg class="play-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M8 5v14l11-7z" fill="currentColor"/>
                     </svg>
                     <svg class="pause-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: none;">
                         <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
-                    </svg>
-                </button>
-                
-                <button class="control-btn next-btn" id="<?php echo esc_attr( $unique_id ); ?>-next" title="Next Track">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" fill="currentColor"/>
                     </svg>
                 </button>
                 
