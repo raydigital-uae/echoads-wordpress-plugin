@@ -30,9 +30,9 @@ window.EchoAdsAudioController = {
         var isPlaying = false;
         var isDragging = false;
         var tracks = [
-            { url: audioData.preRoll, name: "Pre-Roll Ad", trackingUrl: audioData.prerollTrackingUrl },
-            { url: audioData.article, name: "Article Audio", trackingUrl: null },
-            { url: audioData.postRoll, name: "Post-Roll Ad", trackingUrl: audioData.postrollTrackingUrl }
+            { url: audioData.preRoll, name: "Pre-Roll Ad", trackingUrl: audioData.prerollTrackingUrl, allowSeeking: false },
+            { url: audioData.article, name: "Article Audio", trackingUrl: null, allowSeeking: true },
+            { url: audioData.postRoll, name: "Post-Roll Ad", trackingUrl: audioData.postrollTrackingUrl, allowSeeking: false }
         ].filter(track => track.url); // Filter out empty URLs
         
         // Initialize volume
@@ -59,6 +59,7 @@ window.EchoAdsAudioController = {
             
             currentTrack = index;
             updatePlayerState("Loading...");
+            updateProgressBarState();
             
             audio.src = tracks[index].url;
             trackDisplay.textContent = tracks[index].name;
@@ -106,6 +107,19 @@ window.EchoAdsAudioController = {
                     playIcon.style.display = "block";
                     pauseIcon.style.display = "none";
                 }
+            }
+        }
+        
+        function isSeekingAllowed() {
+            return tracks[currentTrack] && tracks[currentTrack].allowSeeking;
+        }
+        
+        function updateProgressBarState() {
+            var seekingAllowed = isSeekingAllowed();
+            if (progressBar) {
+                progressBar.style.cursor = seekingAllowed ? 'pointer' : 'default';
+                progressBar.style.opacity = seekingAllowed ? '1' : '0.7';
+                progressBar.setAttribute('data-seeking-disabled', seekingAllowed ? 'false' : 'true');
             }
         }
         
@@ -214,6 +228,8 @@ window.EchoAdsAudioController = {
         
         // Progress bar interaction
         function handleProgressClick(e) {
+            if (!isSeekingAllowed()) return;
+            
             var rect = progressBar.getBoundingClientRect();
             var clickX = e.clientX - rect.left;
             var width = rect.width;
@@ -228,12 +244,13 @@ window.EchoAdsAudioController = {
         
         // Progress bar dragging
         progressBar.addEventListener("mousedown", function(e) {
+            if (!isSeekingAllowed()) return;
             isDragging = true;
             handleProgressClick(e);
         });
         
         document.addEventListener("mousemove", function(e) {
-            if (isDragging) {
+            if (isDragging && isSeekingAllowed()) {
                 var rect = progressBar.getBoundingClientRect();
                 var clickX = e.clientX - rect.left;
                 var width = rect.width;
@@ -254,13 +271,15 @@ window.EchoAdsAudioController = {
         document.addEventListener("mouseup", function(e) {
             if (isDragging) {
                 isDragging = false;
-                var rect = progressBar.getBoundingClientRect();
-                var clickX = e.clientX - rect.left;
-                var width = rect.width;
-                var clickPercent = Math.max(0, Math.min(1, clickX / width));
-                
-                if (audio.duration) {
-                    audio.currentTime = clickPercent * audio.duration;
+                if (isSeekingAllowed()) {
+                    var rect = progressBar.getBoundingClientRect();
+                    var clickX = e.clientX - rect.left;
+                    var width = rect.width;
+                    var clickPercent = Math.max(0, Math.min(1, clickX / width));
+                    
+                    if (audio.duration) {
+                        audio.currentTime = clickPercent * audio.duration;
+                    }
                 }
             }
         });
@@ -282,13 +301,13 @@ window.EchoAdsAudioController = {
                     break;
                 case "ArrowLeft":
                     e.preventDefault();
-                    if (audio.duration) {
+                    if (isSeekingAllowed() && audio.duration) {
                         audio.currentTime = Math.max(0, audio.currentTime - 10);
                     }
                     break;
                 case "ArrowRight":
                     e.preventDefault();
-                    if (audio.duration) {
+                    if (isSeekingAllowed() && audio.duration) {
                         audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
                     }
                     break;
@@ -315,6 +334,7 @@ window.EchoAdsAudioController = {
         // Touch support for mobile
         var touchStartX = 0;
         progressBar.addEventListener("touchstart", function(e) {
+            if (!isSeekingAllowed()) return;
             e.preventDefault();
             isDragging = true;
             touchStartX = e.touches[0].clientX;
@@ -329,7 +349,7 @@ window.EchoAdsAudioController = {
         });
         
         progressBar.addEventListener("touchmove", function(e) {
-            if (isDragging) {
+            if (isDragging && isSeekingAllowed()) {
                 e.preventDefault();
                 var rect = progressBar.getBoundingClientRect();
                 var clickX = e.touches[0].clientX - rect.left;
@@ -352,13 +372,15 @@ window.EchoAdsAudioController = {
             if (isDragging) {
                 e.preventDefault();
                 isDragging = false;
-                var rect = progressBar.getBoundingClientRect();
-                var clickX = touchStartX - rect.left;
-                var width = rect.width;
-                var clickPercent = Math.max(0, Math.min(1, clickX / width));
-                
-                if (audio.duration) {
-                    audio.currentTime = clickPercent * audio.duration;
+                if (isSeekingAllowed()) {
+                    var rect = progressBar.getBoundingClientRect();
+                    var clickX = touchStartX - rect.left;
+                    var width = rect.width;
+                    var clickPercent = Math.max(0, Math.min(1, clickX / width));
+                    
+                    if (audio.duration) {
+                        audio.currentTime = clickPercent * audio.duration;
+                    }
                 }
             }
         });

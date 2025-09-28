@@ -159,6 +159,37 @@
     opacity: 1;
 }
 
+.progress-bar[data-seeking-disabled="true"] {
+    cursor: default !important;
+    opacity: 0.7 !important;
+}
+
+.progress-bar[data-seeking-disabled="true"]:hover {
+    height: 8px;
+    margin-bottom: 12px;
+}
+
+.progress-bar[data-seeking-disabled="true"] .progress-handle {
+    display: none !important;
+}
+
+.progress-bar[data-seeking-disabled="true"]::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 2px,
+        rgba(255, 255, 255, 0.1) 2px,
+        rgba(255, 255, 255, 0.1) 4px
+    );
+    pointer-events: none;
+}
+
 .time-display {
     display: flex;
     align-items: center;
