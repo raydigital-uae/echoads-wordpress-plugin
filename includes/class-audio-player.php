@@ -109,19 +109,65 @@ class EchoAds_Audio_Player {
         ob_start();
         ?>
         <div class="echoads-audio-player" id="<?php echo esc_attr( $unique_id ); ?>">
+            <div class="audio-player-header">
+                <div class="audio-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="track-info">
+                    <div class="current-track" id="<?php echo esc_attr( $unique_id ); ?>-track">Audio Player</div>
+                    <div class="track-subtitle">EchoAds Audio Experience</div>
+                </div>
+                <div class="audio-status" id="<?php echo esc_attr( $unique_id ); ?>-status">Ready</div>
+            </div>
+            
+            <div class="audio-progress-section">
+                <div class="progress-bar" id="<?php echo esc_attr( $unique_id ); ?>-progress">
+                    <div class="progress-fill" id="<?php echo esc_attr( $unique_id ); ?>-fill"></div>
+                    <div class="progress-handle" id="<?php echo esc_attr( $unique_id ); ?>-handle"></div>
+                </div>
+                <div class="time-display">
+                    <span id="<?php echo esc_attr( $unique_id ); ?>-current-time">0:00</span>
+                    <span class="time-separator">/</span>
+                    <span id="<?php echo esc_attr( $unique_id ); ?>-duration">0:00</span>
+                </div>
+            </div>
+            
             <div class="audio-controls">
-                <button class="play-pause-btn" id="<?php echo esc_attr( $unique_id ); ?>-play-pause">▶</button>
-                <div class="progress-container">
-                    <div class="progress-bar" id="<?php echo esc_attr( $unique_id ); ?>-progress">
-                        <div class="progress-fill" id="<?php echo esc_attr( $unique_id ); ?>-fill"></div>
-                    </div>
-                    <div class="time-display">
-                        <span id="<?php echo esc_attr( $unique_id ); ?>-current-time">0:00</span> / 
-                        <span id="<?php echo esc_attr( $unique_id ); ?>-duration">0:00</span>
+                <button class="control-btn previous-btn" id="<?php echo esc_attr( $unique_id ); ?>-previous" title="Previous Track">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" fill="currentColor"/>
+                    </svg>
+                </button>
+                
+                <button class="play-pause-btn" id="<?php echo esc_attr( $unique_id ); ?>-play-pause" title="Play/Pause">
+                    <svg class="play-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 5v14l11-7z" fill="currentColor"/>
+                    </svg>
+                    <svg class="pause-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+                    </svg>
+                </button>
+                
+                <button class="control-btn next-btn" id="<?php echo esc_attr( $unique_id ); ?>-next" title="Next Track">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" fill="currentColor"/>
+                    </svg>
+                </button>
+                
+                <div class="volume-control">
+                    <button class="control-btn volume-btn" id="<?php echo esc_attr( $unique_id ); ?>-volume-btn" title="Volume">
+                        <svg class="volume-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    <div class="volume-slider" id="<?php echo esc_attr( $unique_id ); ?>-volume-slider">
+                        <input type="range" min="0" max="100" value="80" id="<?php echo esc_attr( $unique_id ); ?>-volume-input">
                     </div>
                 </div>
-                <div class="current-track" id="<?php echo esc_attr( $unique_id ); ?>-track">Audio Player</div>
             </div>
+            
             <audio preload="metadata" id="<?php echo esc_attr( $unique_id ); ?>-audio">
                 Your browser does not support the audio element.
             </audio>
