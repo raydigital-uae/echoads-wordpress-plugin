@@ -10,6 +10,7 @@ class EchoAds_Plugin {
     private $settings;
     private $post_sender;
     private $audio_player;
+    private $meta_box;
 
     public static function get_instance() {
         if ( null === self::$instance ) {
@@ -28,12 +29,14 @@ class EchoAds_Plugin {
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-settings.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-post-sender.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-audio-player.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-meta-box.php';
     }
 
     private function init_components() {
         $this->settings = new EchoAds_Settings();
         $this->post_sender = new EchoAds_Post_Sender();
         $this->audio_player = new EchoAds_Audio_Player();
+        $this->meta_box = new EchoAds_Meta_Box();
     }
 
     private function setup_hooks() {
@@ -59,5 +62,9 @@ class EchoAds_Plugin {
 
     public function get_audio_player() {
         return $this->audio_player;
+    }
+
+    public function get_meta_box() {
+        return $this->meta_box;
     }
 }

@@ -7,8 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class EchoAds_Post_Sender {
 
     public function __construct() {
-        add_action( 'publish_post', array( $this, 'send_post_data' ) );
-        add_action( 'post_updated', array( $this, 'send_post_data' ) );
+        add_action( 'wp_ajax_echoads_generate_audio', array( $this, 'handle_ajax_generate_audio' ) );
     }
 
     public function send_post_data( $post_id ) {
@@ -141,6 +140,101 @@ class EchoAds_Post_Sender {
                 error_log( 'EchoAds Plugin: Successfully sent post data. Response code: ' . $response_code );
             } else {
                 error_log( 'EchoAds Plugin: Failed to send post data. Response code: ' . $response_code . ', Body: ' . $response_body );
+            }
+        }
+    }
+
+    public function handle_ajax_generate_audio() {
+        check_ajax_referer( 'echoads_generate_audio', 'nonce' );
+
+        if ( ! current_user_can( 'edit_posts' ) ) {
+            wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
+            return;
+        }
+
+        $post_id = intval( $_POST['post_id'] );
+
+        if ( ! $post_id ) {
+            wp_send_json_error( array( 'message' => 'Invalid post ID' ) );
+            return;
+        }
+
+        // Check if this is a regeneration request
+        $is_regenerate = isset( $_POST['regenerate'] ) && $_POST['regenerate'] === 'true';
+
+        if ( ! $is_regenerate && get_post_meta( $post_id, '_echoads_audio_generated', true ) ) {
+            wp_send_json_error( array( 'message' => 'Audio already generated for this post' ) );
+            return;
+        }
+
+        $api_key = EchoAds_Settings::get_api_key();
+        $endpoint = EchoAds_Settings::get_endpoint();
+
+        if ( empty( $api_key ) || empty( $endpoint ) ) {
+            wp_send_json_error( array( 'message' => 'Missing API key or endpoint configuration' ) );
+            return;
+        }
+
+        $post = get_post( $post_id );
+
+        if ( ! $post ) {
+            wp_send_json_error( array( 'message' => 'Post not found' ) );
+            return;
+        }
+
+        $dto = $this->prepare_post_dto( $post_id, $post );
+
+        if ( ! $dto ) {
+            wp_send_json_error( array( 'message' => 'Failed to prepare post data' ) );
+            return;
+        }
+
+        $success = $this->send_request_sync( $endpoint, $api_key, $dto, $post_id );
+
+        if ( $success ) {
+            update_post_meta( $post_id, '_echoads_audio_generated', current_time( 'mysql' ) );
+            wp_send_json_success( array( 'message' => 'Audio generation initiated successfully' ) );
+        } else {
+            wp_send_json_error( array( 'message' => 'Failed to send post data to endpoint' ) );
+        }
+    }
+
+    private function send_request_sync( $endpoint, $api_key, $dto, $post_id ) {
+        $body = wp_json_encode( $dto );
+
+        error_log( 'EchoAds Plugin: Sending DTO for post ' . $post_id . ': ' . $body );
+
+        if ( json_last_error() !== JSON_ERROR_NONE ) {
+            error_log( 'EchoAds Plugin: JSON encoding error: ' . json_last_error_msg() );
+            return false;
+        }
+
+        $args = array(
+            'headers' => array(
+                'Content-Type' => 'application/json',
+                'x-api-key' => $api_key
+            ),
+            'body' => $body,
+            'data_format' => 'body',
+            'method' => 'POST',
+            'timeout' => 30,
+        );
+
+        $response = wp_remote_post( $endpoint, $args );
+
+        if ( is_wp_error( $response ) ) {
+            error_log( 'EchoAds Plugin: Error sending post data to ' . $endpoint . ': ' . $response->get_error_message() );
+            return false;
+        } else {
+            $response_code = wp_remote_retrieve_response_code( $response );
+            $response_body = wp_remote_retrieve_body( $response );
+
+            if ( $response_code >= 200 && $response_code < 300 ) {
+                error_log( 'EchoAds Plugin: Successfully sent post data. Response code: ' . $response_code );
+                return true;
+            } else {
+                error_log( 'EchoAds Plugin: Failed to send post data. Response code: ' . $response_code . ', Body: ' . $response_body );
+                return false;
             }
         }
     }
