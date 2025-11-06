@@ -191,10 +191,16 @@ class EchoAds_Post_Sender {
 
         $success = $this->send_request_sync( $endpoint, $api_key, $dto, $post_id );
 
+        // Temporary debug logging
+        error_log( 'EchoAds Plugin: send_request_sync returned: ' . var_export( $success, true ) );
+        error_log( 'EchoAds Plugin: Current post meta _echoads_audio_generated: ' . get_post_meta( $post_id, '_echoads_audio_generated', true ) );
+
         if ( $success ) {
             update_post_meta( $post_id, '_echoads_audio_generated', current_time( 'mysql' ) );
+            error_log( 'EchoAds Plugin: Post meta updated successfully' );
             wp_send_json_success( array( 'message' => 'Audio generation initiated successfully' ) );
         } else {
+            error_log( 'EchoAds Plugin: send_request_sync returned false, sending error response' );
             wp_send_json_error( array( 'message' => 'Failed to send post data to endpoint' ) );
         }
     }
@@ -228,6 +234,17 @@ class EchoAds_Post_Sender {
         } else {
             $response_code = wp_remote_retrieve_response_code( $response );
             $response_body = wp_remote_retrieve_body( $response );
+            $response_headers = wp_remote_retrieve_headers( $response );
+
+            // Enhanced logging for debugging
+            error_log( 'EchoAds Plugin: Response received - Code: ' . var_export( $response_code, true ) . ', Body: ' . substr( $response_body, 0, 500 ) );
+            error_log( 'EchoAds Plugin: Response headers: ' . print_r( $response_headers, true ) );
+
+            // Handle null response code (shouldn't happen, but just in case)
+            if ( $response_code === null ) {
+                error_log( 'EchoAds Plugin: Warning - Response code is null. Treating as failure.' );
+                return false;
+            }
 
             if ( $response_code >= 200 && $response_code < 300 ) {
                 error_log( 'EchoAds Plugin: Successfully sent post data. Response code: ' . $response_code );
