@@ -125,7 +125,7 @@ class EchoAds_Post_Sender {
             'body' => $body,
             'data_format' => 'body',
             'method' => 'POST',
-            'timeout' => 30,
+            'timeout' => EchoAds_Settings::get_timeout(),
         );
 
         $response = wp_remote_post( $endpoint, $args );
@@ -189,19 +189,36 @@ class EchoAds_Post_Sender {
             return;
         }
 
-        $success = $this->send_request_sync( $endpoint, $api_key, $dto, $post_id );
+        $result = $this->send_request_sync( $endpoint, $api_key, $dto, $post_id );
 
-        // Temporary debug logging
-        error_log( 'EchoAds Plugin: send_request_sync returned: ' . var_export( $success, true ) );
+        error_log( 'EchoAds Plugin: send_request_sync returned: ' . var_export( $result, true ) );
         error_log( 'EchoAds Plugin: Current post meta _echoads_audio_generated: ' . get_post_meta( $post_id, '_echoads_audio_generated', true ) );
 
-        if ( $success ) {
+        if ( $result['success'] ) {
             update_post_meta( $post_id, '_echoads_audio_generated', current_time( 'mysql' ) );
             error_log( 'EchoAds Plugin: Post meta updated successfully' );
             wp_send_json_success( array( 'message' => 'Audio generation initiated successfully' ) );
         } else {
-            error_log( 'EchoAds Plugin: send_request_sync returned false, sending error response' );
-            wp_send_json_error( array( 'message' => 'Failed to send post data to endpoint' ) );
+            error_log( 'EchoAds Plugin: send_request_sync returned failure, sending error response with details' );
+            
+            // Build detailed error message
+            $error_details = array(
+                'message' => 'Failed to send post data to endpoint',
+                'response_code' => $result['response_code'],
+                'response_body' => $result['response_body'],
+                'response_headers' => $result['response_headers'],
+                'error_message' => $result['error_message']
+            );
+
+            // Try to parse JSON response body for better readability
+            if ( ! empty( $result['response_body'] ) ) {
+                $parsed_body = json_decode( $result['response_body'], true );
+                if ( json_last_error() === JSON_ERROR_NONE && is_array( $parsed_body ) ) {
+                    $error_details['response_body_parsed'] = $parsed_body;
+                }
+            }
+
+            wp_send_json_error( $error_details );
         }
     }
 
@@ -211,8 +228,15 @@ class EchoAds_Post_Sender {
         error_log( 'EchoAds Plugin: Sending DTO for post ' . $post_id . ': ' . $body );
 
         if ( json_last_error() !== JSON_ERROR_NONE ) {
-            error_log( 'EchoAds Plugin: JSON encoding error: ' . json_last_error_msg() );
-            return false;
+            $error_message = 'JSON encoding error: ' . json_last_error_msg();
+            error_log( 'EchoAds Plugin: ' . $error_message );
+            return array(
+                'success' => false,
+                'response_code' => null,
+                'response_body' => '',
+                'response_headers' => array(),
+                'error_message' => $error_message
+            );
         }
 
         $args = array(
@@ -223,36 +247,62 @@ class EchoAds_Post_Sender {
             'body' => $body,
             'data_format' => 'body',
             'method' => 'POST',
-            'timeout' => 30,
+            'timeout' => EchoAds_Settings::get_timeout(),
         );
 
         $response = wp_remote_post( $endpoint, $args );
 
         if ( is_wp_error( $response ) ) {
-            error_log( 'EchoAds Plugin: Error sending post data to ' . $endpoint . ': ' . $response->get_error_message() );
-            return false;
+            $error_message = $response->get_error_message();
+            error_log( 'EchoAds Plugin: Error sending post data to ' . $endpoint . ': ' . $error_message );
+            return array(
+                'success' => false,
+                'response_code' => null,
+                'response_body' => '',
+                'response_headers' => array(),
+                'error_message' => $error_message
+            );
         } else {
             $response_code = wp_remote_retrieve_response_code( $response );
             $response_body = wp_remote_retrieve_body( $response );
             $response_headers = wp_remote_retrieve_headers( $response );
 
-            // Enhanced logging for debugging
-            error_log( 'EchoAds Plugin: Response received - Code: ' . var_export( $response_code, true ) . ', Body: ' . substr( $response_body, 0, 500 ) );
+            // Convert headers to array if it's a WP_HTTP_Requests_Response object
+            if ( is_object( $response_headers ) ) {
+                $response_headers = $response_headers->getAll();
+            }
+
+            // Enhanced logging for debugging (full body in logs)
+            error_log( 'EchoAds Plugin: Response received - Code: ' . var_export( $response_code, true ) . ', Body: ' . $response_body );
             error_log( 'EchoAds Plugin: Response headers: ' . print_r( $response_headers, true ) );
 
             // Handle null response code (shouldn't happen, but just in case)
             if ( $response_code === null ) {
                 error_log( 'EchoAds Plugin: Warning - Response code is null. Treating as failure.' );
-                return false;
+                return array(
+                    'success' => false,
+                    'response_code' => null,
+                    'response_body' => $response_body,
+                    'response_headers' => $response_headers,
+                    'error_message' => 'Response code is null'
+                );
             }
 
-            if ( $response_code >= 200 && $response_code < 300 ) {
+            $is_success = ( $response_code >= 200 && $response_code < 300 );
+
+            if ( $is_success ) {
                 error_log( 'EchoAds Plugin: Successfully sent post data. Response code: ' . $response_code );
-                return true;
             } else {
                 error_log( 'EchoAds Plugin: Failed to send post data. Response code: ' . $response_code . ', Body: ' . $response_body );
-                return false;
             }
+
+            return array(
+                'success' => $is_success,
+                'response_code' => $response_code,
+                'response_body' => $response_body,
+                'response_headers' => $response_headers,
+                'error_message' => $is_success ? '' : 'HTTP ' . $response_code . ' response received'
+            );
         }
     }
 }

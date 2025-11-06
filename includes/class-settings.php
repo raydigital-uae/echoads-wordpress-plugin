@@ -11,6 +11,7 @@ class EchoAds_Settings {
     const OPTION_AUDIO_ENDPOINT = 'auto_send_plugin_audio_endpoint';
     const OPTION_PREROLL_TRACKING = 'auto_send_plugin_preroll_tracking_endpoint';
     const OPTION_POSTROLL_TRACKING = 'auto_send_plugin_postroll_tracking_endpoint';
+    const OPTION_TIMEOUT = 'auto_send_plugin_timeout';
 
     public function __construct() {
         add_action( 'admin_menu', array( $this, 'add_settings_page' ) );
@@ -87,6 +88,20 @@ class EchoAds_Settings {
                                        placeholder="https://api.example.com"
                                        autocomplete="url" />
                                 <p class="echoads-field-description">The URL where post data will be sent when published or updated.</p>
+                            </div>
+
+                            <div class="echoads-field-group">
+                                <label class="echoads-field-label" for="<?php echo esc_attr( self::OPTION_TIMEOUT ); ?>">Request Timeout (seconds)</label>
+                                <input type="number"
+                                       id="<?php echo esc_attr( self::OPTION_TIMEOUT ); ?>"
+                                       name="<?php echo esc_attr( self::OPTION_TIMEOUT ); ?>"
+                                       value="<?php echo esc_attr( get_option( self::OPTION_TIMEOUT, 120 ) ); ?>"
+                                       class="echoads-field-input"
+                                       min="10"
+                                       max="600"
+                                       step="1"
+                                       placeholder="120" />
+                                <p class="echoads-field-description">Maximum time to wait for the backend to respond (10-600 seconds). Longer articles may require more time. Default: 120 seconds.</p>
                             </div>
                         </div>
 
@@ -188,7 +203,22 @@ class EchoAds_Settings {
         register_setting( 'auto_send_plugin_settings', self::OPTION_AUDIO_ENDPOINT );
         register_setting( 'auto_send_plugin_settings', self::OPTION_PREROLL_TRACKING );
         register_setting( 'auto_send_plugin_settings', self::OPTION_POSTROLL_TRACKING );
+        register_setting( 'auto_send_plugin_settings', self::OPTION_TIMEOUT, array(
+            'type' => 'integer',
+            'sanitize_callback' => array( $this, 'sanitize_timeout' ),
+            'default' => 120
+        ) );
+    }
 
+    public function sanitize_timeout( $value ) {
+        $value = absint( $value );
+        if ( $value < 10 ) {
+            $value = 10;
+        }
+        if ( $value > 600 ) {
+            $value = 600;
+        }
+        return $value;
     }
 
 
@@ -298,5 +328,17 @@ class EchoAds_Settings {
 
     public static function get_postroll_tracking_endpoint() {
         return get_option( self::OPTION_POSTROLL_TRACKING );
+    }
+
+    public static function get_timeout() {
+        $timeout = get_option( self::OPTION_TIMEOUT, 120 );
+        $timeout = absint( $timeout );
+        if ( $timeout < 10 ) {
+            $timeout = 10;
+        }
+        if ( $timeout > 600 ) {
+            $timeout = 600;
+        }
+        return $timeout;
     }
 }

@@ -156,6 +156,32 @@ class EchoAds_Meta_Box {
             margin: 0;
             color: #666;
         }
+
+        .echoads-error-summary {
+            margin-bottom: 8px;
+        }
+
+        .echoads-error-code {
+            font-size: 12px;
+            font-weight: 600;
+            color: #dc3232;
+        }
+
+        .echoads-error-message {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .echoads-toggle-details {
+            font-size: 11px;
+            color: #0073aa;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .echoads-toggle-details:hover {
+            text-decoration: underline;
+        }
         </style>
         <?php
     }
@@ -178,6 +204,54 @@ class EchoAds_Meta_Box {
     private function get_meta_box_script() {
         return "
         jQuery(document).ready(function($) {
+            function formatErrorDetails(errorData) {
+                var html = '<div class=\"echoads-error-summary\">';
+                html += '<strong>' + (errorData.message || 'An error occurred') + '</strong>';
+                
+                if (errorData.response_code !== null && errorData.response_code !== undefined) {
+                    html += '<br><span class=\"echoads-error-code\">HTTP Status: ' + errorData.response_code + '</span>';
+                }
+                
+                if (errorData.error_message) {
+                    html += '<br><span class=\"echoads-error-message\">' + errorData.error_message + '</span>';
+                }
+                
+                html += '<br><a href=\"#\" class=\"echoads-toggle-details\">Show Details</a>';
+                html += '</div>';
+                
+                html += '<div class=\"echoads-error-details\" style=\"display: none; margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 4px; font-size: 11px; max-height: 400px; overflow-y: auto;\">';
+                
+                if (errorData.response_code !== null && errorData.response_code !== undefined) {
+                    html += '<div style=\"margin-bottom: 8px;\"><strong>Response Code:</strong> ' + errorData.response_code + '</div>';
+                }
+                
+                if (errorData.response_body) {
+                    html += '<div style=\"margin-bottom: 8px;\"><strong>Response Body:</strong>';
+                    html += '<pre style=\"white-space: pre-wrap; word-wrap: break-word; background: rgba(0,0,0,0.05); padding: 8px; border-radius: 3px; margin-top: 4px; max-height: 200px; overflow-y: auto;\">';
+                    if (errorData.response_body_parsed) {
+                        html += JSON.stringify(errorData.response_body_parsed, null, 2);
+                    } else {
+                        html += $('<div>').text(errorData.response_body).html();
+                    }
+                    html += '</pre></div>';
+                }
+                
+                if (errorData.response_headers && Object.keys(errorData.response_headers).length > 0) {
+                    html += '<div style=\"margin-bottom: 8px;\"><strong>Response Headers:</strong>';
+                    html += '<pre style=\"white-space: pre-wrap; word-wrap: break-word; background: rgba(0,0,0,0.05); padding: 8px; border-radius: 3px; margin-top: 4px; max-height: 150px; overflow-y: auto;\">';
+                    html += JSON.stringify(errorData.response_headers, null, 2);
+                    html += '</pre></div>';
+                }
+                
+                if (errorData.error_message) {
+                    html += '<div style=\"margin-bottom: 8px;\"><strong>Error Message:</strong> ' + errorData.error_message + '</div>';
+                }
+                
+                html += '</div>';
+                
+                return html;
+            }
+
             $('#echoads-generate-btn, #echoads-regenerate-btn').click(function(e) {
                 e.preventDefault();
 
@@ -193,7 +267,7 @@ class EchoAds_Meta_Box {
                 } else {
                     button.html('<span class=\"echoads-btn-icon\">⏳</span> Generating...');
                 }
-                responseDiv.hide().removeClass('success error');
+                responseDiv.hide().removeClass('success error').empty();
 
                 $.ajax({
                     url: echoads_ajax.ajax_url,
@@ -212,7 +286,24 @@ class EchoAds_Meta_Box {
                                 location.reload();
                             }, 1500);
                         } else {
-                            responseDiv.addClass('error').text(response.data.message).show();
+                            responseDiv.addClass('error');
+                            var errorHtml = formatErrorDetails(response.data || {});
+                            responseDiv.html(errorHtml).show();
+                            
+                            // Toggle details
+                            responseDiv.find('.echoads-toggle-details').click(function(e) {
+                                e.preventDefault();
+                                var detailsDiv = responseDiv.find('.echoads-error-details');
+                                var toggleLink = $(this);
+                                if (detailsDiv.is(':visible')) {
+                                    detailsDiv.slideUp();
+                                    toggleLink.text('Show Details');
+                                } else {
+                                    detailsDiv.slideDown();
+                                    toggleLink.text('Hide Details');
+                                }
+                            });
+                            
                             // Reset button state
                             button.prop('disabled', false);
                             if (isRegenerate) {
@@ -223,7 +314,41 @@ class EchoAds_Meta_Box {
                         }
                     },
                     error: function(xhr, status, error) {
-                        responseDiv.addClass('error').text('An error occurred: ' + error).show();
+                        var errorData = {
+                            message: 'An error occurred: ' + error,
+                            error_message: error
+                        };
+                        
+                        // Try to parse response if available
+                        if (xhr.responseText) {
+                            try {
+                                var parsedResponse = JSON.parse(xhr.responseText);
+                                if (parsedResponse.data) {
+                                    errorData = $.extend(errorData, parsedResponse.data);
+                                }
+                            } catch(e) {
+                                errorData.response_body = xhr.responseText;
+                            }
+                        }
+                        
+                        responseDiv.addClass('error');
+                        var errorHtml = formatErrorDetails(errorData);
+                        responseDiv.html(errorHtml).show();
+                        
+                        // Toggle details
+                        responseDiv.find('.echoads-toggle-details').click(function(e) {
+                            e.preventDefault();
+                            var detailsDiv = responseDiv.find('.echoads-error-details');
+                            var toggleLink = $(this);
+                            if (detailsDiv.is(':visible')) {
+                                detailsDiv.slideUp();
+                                toggleLink.text('Show Details');
+                            } else {
+                                detailsDiv.slideDown();
+                                toggleLink.text('Hide Details');
+                            }
+                        });
+                        
                         // Reset button state
                         button.prop('disabled', false);
                         if (isRegenerate) {
