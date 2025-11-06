@@ -15,8 +15,13 @@ class EchoAds_Audio_Player {
         global $post;
 
         if ( is_singular() && ! is_feed() && ! is_admin() ) {
-            $audio_player = $this->generate_audio_player( $post->ID );
-            $content .= $audio_player;
+            // Only show audio player for posts that have generated audio
+            $audio_generated = get_post_meta( $post->ID, '_echoads_audio_generated', true );
+
+            if ( $audio_generated ) {
+                $audio_player = $this->generate_audio_player( $post->ID );
+                $content .= $audio_player;
+            }
         }
 
         return $content;
