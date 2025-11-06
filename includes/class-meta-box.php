@@ -279,7 +279,7 @@ class EchoAds_Meta_Box {
                 // Check post status before proceeding (only for generate button, not regenerate)
                 if (!isRegenerate && typeof echoads_ajax !== 'undefined' && !echoads_ajax.is_valid_status) {
                     responseDiv.removeClass('success').addClass('error');
-                    responseDiv.html('<strong>Post Status Invalid</strong><br>Audio can only be generated for posts with "Draft" or "Published" status. Please save your post as a draft or publish it first.').show();
+                    responseDiv.html('<strong>Post Status Invalid</strong><br>Audio can only be generated for posts with Draft or Published status. Please save your post as a draft or publish it first.').show();
                     return;
                 }
 
