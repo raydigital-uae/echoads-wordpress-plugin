@@ -30,9 +30,9 @@ window.EchoAdsAudioController = {
         var isPlaying = false;
         var isDragging = false;
         var tracks = [
-            { url: audioData.preRoll, name: "Pre-Roll Ad", trackingUrl: audioData.prerollTrackingUrl, allowSeeking: false },
-            { url: audioData.article, name: "Article Audio", trackingUrl: null, allowSeeking: true },
-            { url: audioData.postRoll, name: "Post-Roll Ad", trackingUrl: audioData.postrollTrackingUrl, allowSeeking: false }
+            { url: audioData.preRoll, name: "Pre-Roll Ad", trackingUrl: audioData.prerollTrackingUrl, campaignAudioId: audioData.preRollAudioId, allowSeeking: false },
+            { url: audioData.article, name: "Article Audio", trackingUrl: null, campaignAudioId: audioData.articleAudioId, allowSeeking: true },
+            { url: audioData.postRoll, name: "Post-Roll Ad", trackingUrl: audioData.postrollTrackingUrl, campaignAudioId: audioData.postRollAudioId, allowSeeking: false }
         ].filter(track => track.url); // Filter out empty URLs
         
         // Initialize volume
@@ -76,19 +76,37 @@ window.EchoAdsAudioController = {
             }
         }
         
-        function callTrackingEndpoint(url) {
+        function callTrackingEndpoint(url, apiKey, campaignAudioId) {
             if (!url || typeof jQuery === "undefined") return;
             
-            jQuery.ajax({
+            var ajaxOptions = {
                 url: url,
                 type: "POST",
+                contentType: "application/json",
                 success: function(response) {
                     console.log("Tracking call successful:", response);
                 },
                 error: function(xhr, status, error) {
                     console.error("Tracking call failed:", error);
                 }
-            });
+            };
+            
+            if (apiKey) {
+                ajaxOptions.headers = {
+                    'x-api-key': apiKey
+                };
+            }
+            
+            var requestBody = {};
+            if (campaignAudioId !== null && campaignAudioId !== undefined) {
+                requestBody.campaignAudioId = campaignAudioId;
+            }
+            
+            if (Object.keys(requestBody).length > 0) {
+                ajaxOptions.data = JSON.stringify(requestBody);
+            }
+            
+            jQuery.ajax(ajaxOptions);
         }
         
         function formatTime(seconds) {
@@ -173,7 +191,7 @@ window.EchoAdsAudioController = {
             
             var track = tracks[currentTrack];
             if (track.trackingUrl) {
-                callTrackingEndpoint(track.trackingUrl);
+                callTrackingEndpoint(track.trackingUrl, audioData.apiKey, track.campaignAudioId);
             }
         });
         

@@ -28,6 +28,8 @@ class EchoAds_Meta_Box {
         $endpoint = EchoAds_Settings::get_endpoint();
 
         $has_config = ! empty( $api_key ) && ! empty( $endpoint );
+        $post_status = isset( $post->post_status ) ? $post->post_status : '';
+        $is_valid_status = in_array( $post_status, array( 'draft', 'publish' ), true );
 
         wp_nonce_field( 'echoads_generate_audio', 'echoads_generate_audio_nonce' );
         ?>
@@ -37,6 +39,15 @@ class EchoAds_Meta_Box {
                     <p><strong>Configuration Required</strong></p>
                     <p>Please configure API key and endpoint in <a href="<?php echo admin_url( 'options-general.php?page=auto-send-plugin' ); ?>" target="_blank">EchoAds Settings</a> before generating audio.</p>
                 </div>
+            <?php elseif ( ! $is_valid_status ) : ?>
+                <div class="echoads-notice echoads-notice-warning">
+                    <p><strong>Post Status Invalid</strong></p>
+                    <p>Audio can only be generated for posts with "Draft" or "Published" status. Please save your post as a draft or publish it first.</p>
+                </div>
+                <button type="button" id="echoads-generate-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" disabled>
+                    <span class="echoads-btn-icon">🎵</span>
+                    Generate Audio Article
+                </button>
             <?php elseif ( $audio_generated ) : ?>
                 <div class="echoads-notice echoads-notice-success">
                     <p><strong>Audio Generated</strong></p>
@@ -194,9 +205,14 @@ class EchoAds_Meta_Box {
 
             wp_add_inline_script( 'jquery', $this->get_meta_box_script() );
 
+            $post_status = isset( $post->post_status ) ? $post->post_status : '';
+            $is_valid_status = in_array( $post_status, array( 'draft', 'publish' ), true );
+
             wp_localize_script( 'jquery', 'echoads_ajax', array(
                 'ajax_url' => admin_url( 'admin-ajax.php' ),
-                'nonce' => wp_create_nonce( 'echoads_generate_audio' )
+                'nonce' => wp_create_nonce( 'echoads_generate_audio' ),
+                'post_status' => $post_status,
+                'is_valid_status' => $is_valid_status
             ) );
         }
     }
@@ -259,6 +275,13 @@ class EchoAds_Meta_Box {
                 var postId = button.data('post-id');
                 var isRegenerate = button.attr('id') === 'echoads-regenerate-btn';
                 var responseDiv = $('#echoads-response-message');
+
+                // Check post status before proceeding (only for generate button, not regenerate)
+                if (!isRegenerate && typeof echoads_ajax !== 'undefined' && !echoads_ajax.is_valid_status) {
+                    responseDiv.removeClass('success').addClass('error');
+                    responseDiv.html('<strong>Post Status Invalid</strong><br>Audio can only be generated for posts with Draft or Published status. Please save your post as a draft or publish it first.').show();
+                    return;
+                }
 
                 // Update button state
                 button.prop('disabled', true);

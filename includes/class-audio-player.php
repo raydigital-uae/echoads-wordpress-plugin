@@ -20,7 +20,10 @@ class EchoAds_Audio_Player {
 
             if ( $audio_generated ) {
                 $audio_player = $this->generate_audio_player( $post->ID );
-                $content .= $audio_player;
+                // Only append player if valid audio data was found
+                if ( ! empty( $audio_player ) ) {
+                    $content .= $audio_player;
+                }
             }
         }
 
@@ -41,16 +44,20 @@ class EchoAds_Audio_Player {
             return '<p>Error: API key is not configured. Please set it in the plugin settings.</p>';
         }
 
-        $audio_data = $this->fetch_audio_data( $audio_endpoint, $api_key );
+        $audio_data = $this->fetch_audio_data( $audio_endpoint, $api_key, $post_id );
 
         if ( ! $audio_data ) {
-            return '<p>Error fetching audio.</p>';
+            error_log( 'No audio data available for post ID: ' . $post_id );
+            return '';
         }
 
         return $this->render_audio_player( $post_id, $audio_data );
     }
 
-    private function fetch_audio_data( $audio_endpoint, $api_key ) {
+    private function fetch_audio_data( $audio_endpoint, $api_key, $post_id ) {
+        // Add externalId query parameter to the endpoint URL
+        $audio_endpoint = add_query_arg( 'externalId', strval( $post_id ), $audio_endpoint );
+        
         $args = array(
             'headers' => array(
                 'x-api-key' => $api_key
@@ -78,21 +85,37 @@ class EchoAds_Audio_Player {
         $pre_roll_audio_link = null;
         $post_roll_audio_link = null;
         $article_audio_link = null;
+        $pre_roll_audio_id = null;
+        $post_roll_audio_id = null;
+        $article_audio_id = null;
+
+        $audio_urls = null;
 
         if ( isset( $audio_info['success'] ) && $audio_info['success'] === true && isset( $audio_info['data'] ) ) {
-            $pre_roll_audio_link = $audio_info['data']['preRollAudioLink'];
-            $post_roll_audio_link = $audio_info['data']['postRollAudioLink'];
-            $article_audio_link = $audio_info['data']['articleAudioLink'];
+            if ( isset( $audio_info['data']['audioUrls'] ) ) {
+                $audio_urls = $audio_info['data']['audioUrls'];
+            } else {
+                $audio_urls = $audio_info['data'];
+            }
+        } elseif ( isset( $audio_info['audioUrls'] ) ) {
+            $audio_urls = $audio_info['audioUrls'];
         } elseif ( isset( $audio_info['preRollAudioLink'] ) || isset( $audio_info['postRollAudioLink'] ) || isset( $audio_info['articleAudioLink'] ) ) {
-            $pre_roll_audio_link = isset( $audio_info['preRollAudioLink'] ) ? $audio_info['preRollAudioLink'] : null;
-            $post_roll_audio_link = isset( $audio_info['postRollAudioLink'] ) ? $audio_info['postRollAudioLink'] : null;
-            $article_audio_link = isset( $audio_info['articleAudioLink'] ) ? $audio_info['articleAudioLink'] : null;
+            $audio_urls = $audio_info;
         } elseif ( is_array( $audio_info ) && ! empty( $audio_info ) ) {
             error_log( 'Unrecognized audio response format, attempting to parse: ' . print_r( $audio_info, true ) );
             return false;
         } else {
             error_log( 'Error: No valid audio links found in response. Response was: ' . $raw_body );
             return false;
+        }
+
+        if ( $audio_urls ) {
+            $pre_roll_audio_link = isset( $audio_urls['preRollAudioLink'] ) ? $audio_urls['preRollAudioLink'] : null;
+            $post_roll_audio_link = isset( $audio_urls['postRollAudioLink'] ) ? $audio_urls['postRollAudioLink'] : null;
+            $article_audio_link = isset( $audio_urls['articleAudioLink'] ) ? $audio_urls['articleAudioLink'] : null;
+            $pre_roll_audio_id = isset( $audio_urls['preRollAudioId'] ) ? $audio_urls['preRollAudioId'] : null;
+            $post_roll_audio_id = isset( $audio_urls['postRollAudioId'] ) ? $audio_urls['postRollAudioId'] : null;
+            $article_audio_id = isset( $audio_urls['articleAudioId'] ) ? $audio_urls['articleAudioId'] : null;
         }
 
         if ( ! $pre_roll_audio_link && ! $post_roll_audio_link && ! $article_audio_link ) {
@@ -102,7 +125,10 @@ class EchoAds_Audio_Player {
         return array(
             'preRoll' => $pre_roll_audio_link,
             'article' => $article_audio_link,
-            'postRoll' => $post_roll_audio_link
+            'postRoll' => $post_roll_audio_link,
+            'preRollAudioId' => $pre_roll_audio_id,
+            'postRollAudioId' => $post_roll_audio_id,
+            'articleAudioId' => $article_audio_id
         );
     }
 
@@ -110,6 +136,7 @@ class EchoAds_Audio_Player {
         $unique_id = 'audio-player-' . $post_id;
         $preroll_tracking_endpoint = EchoAds_Settings::get_preroll_tracking_endpoint();
         $postroll_tracking_endpoint = EchoAds_Settings::get_postroll_tracking_endpoint();
+        $api_key = EchoAds_Settings::get_api_key();
 
         ob_start();
         ?>
@@ -172,7 +199,11 @@ class EchoAds_Audio_Player {
                 article: "<?php echo esc_js( $audio_data['article'] ); ?>",
                 postRoll: "<?php echo esc_js( $audio_data['postRoll'] ); ?>",
                 prerollTrackingUrl: "<?php echo esc_js( $preroll_tracking_endpoint ); ?>",
-                postrollTrackingUrl: "<?php echo esc_js( $postroll_tracking_endpoint ); ?>"
+                postrollTrackingUrl: "<?php echo esc_js( $postroll_tracking_endpoint ); ?>",
+                apiKey: "<?php echo esc_js( $api_key ); ?>",
+                preRollAudioId: <?php echo isset( $audio_data['preRollAudioId'] ) && $audio_data['preRollAudioId'] !== null ? json_encode( $audio_data['preRollAudioId'] ) : 'null'; ?>,
+                postRollAudioId: <?php echo isset( $audio_data['postRollAudioId'] ) && $audio_data['postRollAudioId'] !== null ? json_encode( $audio_data['postRollAudioId'] ) : 'null'; ?>,
+                articleAudioId: <?php echo isset( $audio_data['articleAudioId'] ) && $audio_data['articleAudioId'] !== null ? json_encode( $audio_data['articleAudioId'] ) : 'null'; ?>
             };
             
             var playerId = "<?php echo esc_js( $unique_id ); ?>";
