@@ -182,6 +182,17 @@ class EchoAds_Post_Sender {
             return;
         }
 
+        // Validate post status for non-regenerate requests
+        if ( ! $is_regenerate ) {
+            $post_status = isset( $post->post_status ) ? $post->post_status : '';
+            $is_valid_status = in_array( $post_status, array( 'draft', 'publish' ), true );
+            
+            if ( ! $is_valid_status ) {
+                wp_send_json_error( array( 'message' => 'Audio can only be generated for posts with "Draft" or "Published" status. Please save your post as a draft or publish it first.' ) );
+                return;
+            }
+        }
+
         $dto = $this->prepare_post_dto( $post_id, $post );
 
         if ( ! $dto ) {
