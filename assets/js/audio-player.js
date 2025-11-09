@@ -17,13 +17,20 @@ window.EchoAdsAudioController = {
         var statusDisplay = document.getElementById(playerId + "-status");
         var volumeBtn = document.getElementById(playerId + "-volume-btn");
         var volumeInput = document.getElementById(playerId + "-volume-input");
-        var playIcon = playPauseBtn.querySelector(".play-icon");
-        var pauseIcon = playPauseBtn.querySelector(".pause-icon");
         var playerContainer = document.getElementById(playerId);
         
         if (!audio || !playPauseBtn || !progressBar) {
             console.error("Audio player elements not found for", playerId);
             return;
+        }
+        
+        // Query icon elements after confirming playPauseBtn exists
+        var playIcon = playPauseBtn.querySelector(".play-icon");
+        var pauseIcon = playPauseBtn.querySelector(".pause-icon");
+        
+        // Warn about missing icons but don't fail initialization
+        if (!playIcon || !pauseIcon) {
+            console.warn("Play/Pause icons not found for", playerId, "- player will function but icons may not update");
         }
         
         var currentTrack = 0;

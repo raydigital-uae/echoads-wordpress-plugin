@@ -214,13 +214,43 @@ class EchoAds_Audio_Player {
             
             window.EchoAdsAudioPlayers[playerId] = audioData;
             
-            setTimeout(function() {
-                if (typeof window.EchoAdsAudioController !== "undefined") {
-                    window.EchoAdsAudioController.init(playerId);
-                } else {
-                    console.error("EchoAdsAudioController not available");
+            // Retry mechanism with exponential backoff to handle script loading race condition
+            function initializePlayer(attempt, delays) {
+                if (attempt >= delays.length) {
+                    console.error("EchoAdsAudioController failed to load after " + delays.length + " attempts. Please refresh the page.");
+                    return;
                 }
-            }, 100);
+                
+                // Check if DOM is ready and controller is available
+                if (document.readyState === "loading") {
+                    document.addEventListener("DOMContentLoaded", function() {
+                        initializePlayer(attempt, delays);
+                    });
+                    return;
+                }
+                
+                if (typeof window.EchoAdsAudioController !== "undefined") {
+                    // Verify player element exists before initializing
+                    var playerElement = document.getElementById(playerId);
+                    if (playerElement) {
+                        window.EchoAdsAudioController.init(playerId);
+                    } else {
+                        // Element not ready yet, retry
+                        setTimeout(function() {
+                            initializePlayer(attempt + 1, delays);
+                        }, delays[attempt]);
+                    }
+                } else {
+                    // Controller not loaded yet, retry with exponential backoff
+                    setTimeout(function() {
+                        initializePlayer(attempt + 1, delays);
+                    }, delays[attempt]);
+                }
+            }
+            
+            // Start initialization with exponential backoff delays: 50ms, 100ms, 200ms, 400ms, 800ms
+            var delays = [50, 100, 200, 400, 800];
+            initializePlayer(0, delays);
         })();
         </script>
         <?php
