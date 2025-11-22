@@ -144,11 +144,13 @@ class EchoAds_Audio_Player
         $preroll_tracking_endpoint = EchoAds_Settings::get_preroll_tracking_endpoint();
         $postroll_tracking_endpoint = EchoAds_Settings::get_postroll_tracking_endpoint();
         $api_key = EchoAds_Settings::get_api_key();
+        $bg_color = EchoAds_Settings::get_player_bg_color();
 
         ob_start();
         ?>
         <div class="echoads-audio-player"
-             id="<?php echo esc_attr($unique_id); ?>">
+             id="<?php echo esc_attr($unique_id); ?>"
+             style="background: <?php echo esc_attr($bg_color); ?>;">
             <div class="audio-player-header">
                 <div class="audio-icon">
                     <svg width="24"

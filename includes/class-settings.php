@@ -13,6 +13,7 @@ class EchoAds_Settings
     const OPTION_PREROLL_TRACKING = 'auto_send_plugin_preroll_tracking_endpoint';
     const OPTION_POSTROLL_TRACKING = 'auto_send_plugin_postroll_tracking_endpoint';
     const OPTION_TIMEOUT = 'auto_send_plugin_timeout';
+    const OPTION_PLAYER_BG_COLOR = 'auto_send_plugin_player_bg_color';
 
     public function __construct()
     {
@@ -166,6 +167,19 @@ class EchoAds_Settings
                                     <p class="echoads-field-description">The URL to fetch audio links for pre-roll, article, and
                                         post-roll content.</p>
                                 </div>
+
+                                <div class="echoads-field-group">
+                                    <label class="echoads-field-label"
+                                           for="<?php echo esc_attr(self::OPTION_PLAYER_BG_COLOR); ?>">Player Background
+                                        Color</label>
+                                    <input type="text"
+                                           id="<?php echo esc_attr(self::OPTION_PLAYER_BG_COLOR); ?>"
+                                           name="<?php echo esc_attr(self::OPTION_PLAYER_BG_COLOR); ?>"
+                                           value="<?php echo esc_attr(get_option(self::OPTION_PLAYER_BG_COLOR, '#5D33F5')); ?>"
+                                           class="echoads-color-picker" />
+                                    <p class="echoads-field-description">Choose a background color for the audio player. Default:
+                                        #5D33F5</p>
+                                </div>
                             </div>
 
                             <div class="echoads-form-section">
@@ -301,6 +315,11 @@ class EchoAds_Settings
             'sanitize_callback' => array($this, 'sanitize_timeout'),
             'default' => 120
         ));
+        register_setting('auto_send_plugin_settings', self::OPTION_PLAYER_BG_COLOR, array(
+            'type' => 'string',
+            'sanitize_callback' => array($this, 'sanitize_color'),
+            'default' => '#5D33F5'
+        ));
     }
 
     public function sanitize_timeout($value)
@@ -315,6 +334,20 @@ class EchoAds_Settings
         return $value;
     }
 
+    public function sanitize_color($value)
+    {
+        // Remove any whitespace
+        $value = trim($value);
+        
+        // Validate hex color format
+        if (preg_match('/^#[a-fA-F0-9]{6}$/', $value)) {
+            return $value;
+        }
+        
+        // Return default color if invalid
+        return '#5D33F5';
+    }
+
 
     public function enqueue_admin_scripts($hook)
     {
@@ -324,14 +357,18 @@ class EchoAds_Settings
 
         $plugin_url = plugin_dir_url(dirname(__FILE__));
 
+        // Enqueue WordPress color picker
+        wp_enqueue_style('wp-color-picker');
+        
         wp_enqueue_style(
             'echoads-admin-settings',
             $plugin_url . 'assets/css/admin-settings.css',
-            array(),
+            array('wp-color-picker'),
             '1.0.0'
         );
 
         wp_enqueue_script('jquery');
+        wp_enqueue_script('wp-color-picker');
         wp_add_inline_script('jquery', $this->get_health_check_script());
     }
 
@@ -339,6 +376,9 @@ class EchoAds_Settings
     {
         return "
         jQuery(document).ready(function($) {
+            // Initialize color picker
+            $('.echoads-color-picker').wpColorPicker();
+
             // API Key visibility toggle
             $('#api-key-toggle').click(function(e) {
                 e.preventDefault();
@@ -442,5 +482,10 @@ class EchoAds_Settings
             $timeout = 600;
         }
         return $timeout;
+    }
+
+    public static function get_player_bg_color()
+    {
+        return get_option(self::OPTION_PLAYER_BG_COLOR, '#5D33F5');
     }
 }
