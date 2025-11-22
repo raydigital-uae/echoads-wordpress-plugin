@@ -374,11 +374,6 @@
         height: 40px;
     }
     
-    .play-pause-btn {
-        width: 52px;
-        height: 52px;
-    }
-    
     .volume-control {
         display: none;
     }
@@ -387,12 +382,10 @@
 @media (max-width: 480px) {
     .echoads-audio-player {
         padding: 16px;
-        margin: 12px 8px;
+        margin: 0;
     }
     
     .audio-player-header {
-        flex-direction: column;
-        align-items: flex-start;
         gap: 8px;
     }
     
@@ -417,11 +410,6 @@
     .control-btn {
         width: 36px;
         height: 36px;
-    }
-    
-    .play-pause-btn {
-        width: 48px;
-        height: 48px;
     }
 }
 
