@@ -229,7 +229,7 @@ class EchoAds_Audio_Player
                         </div>
                     </div>
 
-                    <div class="time-display-container">
+                    <div class="time-display">
                         <span id="<?php echo esc_attr($unique_id); ?>-current-time">0:00</span>
                         <span class="time-separator">/</span>
                         <span id="<?php echo esc_attr($unique_id); ?>-duration">0:00</span>
