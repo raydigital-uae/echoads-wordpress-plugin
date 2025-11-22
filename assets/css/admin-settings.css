@@ -38,6 +38,7 @@
     background-color: #5d33f5; /* Exact brand purple from email template */
     padding: 24px 32px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 16px;
 }
@@ -45,12 +46,9 @@
 .echoads-settings-icon {
     width: 56px;
     height: 56px;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
 }
 
 .echoads-settings-icon svg {
@@ -159,7 +157,7 @@
 }
 
 .echoads-field-input.has-toggle {
-    padding-right: 48px;
+    padding-right: 40px;
 }
 
 .echoads-field-input::placeholder {
@@ -183,14 +181,14 @@
 /* Toggle button for password visibility */
 .echoads-toggle-button {
     position: absolute;
-    right: 12px;
+    right: 2px;
     top: 50%;
     transform: translateY(-50%);
     background: #f0f0f0; /* Light grey like OTP box */
     border: 1px solid #e0e0e0;
     border-radius: 6px;
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 28px;
     color: #666666; /* Dark grey icon */
     cursor: pointer;
     display: flex;
@@ -208,11 +206,6 @@
 
 .echoads-toggle-button:active {
     transform: translateY(-50%) scale(0.95);
-}
-
-.echoads-toggle-button:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(93, 51, 245, 0.2);
 }
 
 .echoads-toggle-button svg {

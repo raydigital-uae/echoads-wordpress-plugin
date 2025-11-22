@@ -3,14 +3,13 @@
 .echoads-audio-player {
     background: #5D33F5;
     border-radius: 16px;
-    padding: 24px;
-    margin: 24px 0;
+    padding: 16px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     color: white;
     position: relative;
     overflow: hidden;
-    max-width: 600px;
+    max-width: 400px;
     transition: all 0.3s ease;
 }
 
@@ -95,11 +94,14 @@
     transition: all 0.3s ease;
 }
 
-/* Progress Section */
-.audio-progress-section {
-    margin-bottom: 20px;
+.audio-controls-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
 }
 
+/* Progress Section */
 .progress-bar {
     background: rgba(255, 255, 255, 0.2);
     height: 8px;
@@ -224,6 +226,7 @@
     justify-content: center;
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
+    outline: none;
 }
 
 .control-btn:hover {
@@ -239,8 +242,8 @@
     background: rgba(255, 255, 255, 0.25);
     border: none;
     border-radius: 50%;
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     color: white;
     cursor: pointer;
     display: flex;
@@ -249,6 +252,7 @@
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    outline: none;
 }
 
 .play-pause-btn:hover {
@@ -270,17 +274,19 @@
 
 .volume-slider {
     position: absolute;
-    right: 100%;
+    left: 110%;
     top: 50%;
     transform: translateY(-50%);
-    margin-right: 12px;
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s ease;
     background: rgba(255, 255, 255, 0.2);
     padding: 8px 12px;
-    border-radius: 20px;
+    border-radius: 60px;
     backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .volume-control:hover .volume-slider {
@@ -289,7 +295,6 @@
 }
 
 .volume-slider input[type="range"] {
-    width: 80px;
     height: 4px;
     background: rgba(255, 255, 255, 0.3);
     border-radius: 2px;
