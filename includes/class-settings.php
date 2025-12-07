@@ -8,10 +8,7 @@ class EchoAds_Settings
 {
 
     const OPTION_API_KEY = 'auto_send_plugin_api_key';
-    const OPTION_ENDPOINT = 'auto_send_plugin_endpoint';
-    const OPTION_AUDIO_ENDPOINT = 'auto_send_plugin_audio_endpoint';
-    const OPTION_PREROLL_TRACKING = 'auto_send_plugin_preroll_tracking_endpoint';
-    const OPTION_POSTROLL_TRACKING = 'auto_send_plugin_postroll_tracking_endpoint';
+    const OPTION_BASE_URL = 'auto_send_plugin_base_url';
     const OPTION_TIMEOUT = 'auto_send_plugin_timeout';
     const OPTION_PLAYER_BG_COLOR = 'auto_send_plugin_player_bg_color';
 
@@ -119,16 +116,15 @@ class EchoAds_Settings
 
                                 <div class="echoads-field-group">
                                     <label class="echoads-field-label"
-                                           for="<?php echo esc_attr(self::OPTION_ENDPOINT); ?>">Endpoint URL</label>
-                                    <input type="url"
-                                           id="<?php echo esc_attr(self::OPTION_ENDPOINT); ?>"
-                                           name="<?php echo esc_attr(self::OPTION_ENDPOINT); ?>"
-                                           value="<?php echo esc_attr(get_option(self::OPTION_ENDPOINT)); ?>"
+                                           for="<?php echo esc_attr(self::OPTION_BASE_URL); ?>">Base URL</label>
+                                    <input type="text"
+                                           id="<?php echo esc_attr(self::OPTION_BASE_URL); ?>"
+                                           name="<?php echo esc_attr(self::OPTION_BASE_URL); ?>"
+                                           value="<?php echo esc_attr(get_option(self::OPTION_BASE_URL)); ?>"
                                            class="echoads-field-input"
-                                           placeholder="https://api.example.com"
+                                           placeholder="example.com/api"
                                            autocomplete="url" />
-                                    <p class="echoads-field-description">The URL where post data will be sent when published or
-                                        updated.</p>
+                                    <p class="echoads-field-description">The base URL for all API endpoints (e.g., example.com/api). All endpoint routes will be appended to this base URL.</p>
                                 </div>
 
                                 <div class="echoads-field-group">
@@ -151,22 +147,7 @@ class EchoAds_Settings
 
                             <div class="echoads-form-section">
                                 <h2>Audio Configuration</h2>
-                                <p>Set up audio endpoints for the media player functionality.</p>
-
-                                <div class="echoads-field-group">
-                                    <label class="echoads-field-label"
-                                           for="<?php echo esc_attr(self::OPTION_AUDIO_ENDPOINT); ?>">Audio Endpoint
-                                        URL</label>
-                                    <input type="url"
-                                           id="<?php echo esc_attr(self::OPTION_AUDIO_ENDPOINT); ?>"
-                                           name="<?php echo esc_attr(self::OPTION_AUDIO_ENDPOINT); ?>"
-                                           value="<?php echo esc_attr(get_option(self::OPTION_AUDIO_ENDPOINT)); ?>"
-                                           class="echoads-field-input"
-                                           placeholder="https://audio.example.com/api/audio"
-                                           autocomplete="url" />
-                                    <p class="echoads-field-description">The URL to fetch audio links for pre-roll, article, and
-                                        post-roll content.</p>
-                                </div>
+                                <p>Configure audio player appearance settings.</p>
 
                                 <div class="echoads-field-group">
                                     <label class="echoads-field-label"
@@ -179,39 +160,6 @@ class EchoAds_Settings
                                            class="echoads-color-picker" />
                                     <p class="echoads-field-description">Choose a background color for the audio player. Default:
                                         #5D33F5</p>
-                                </div>
-                            </div>
-
-                            <div class="echoads-form-section">
-                                <h2>Ad Tracking</h2>
-                                <p>Configure tracking endpoints for advertising analytics.</p>
-
-                                <div class="echoads-field-group">
-                                    <label class="echoads-field-label"
-                                           for="<?php echo esc_attr(self::OPTION_PREROLL_TRACKING); ?>">Pre-Roll Tracking
-                                        Endpoint</label>
-                                    <input type="url"
-                                           id="<?php echo esc_attr(self::OPTION_PREROLL_TRACKING); ?>"
-                                           name="<?php echo esc_attr(self::OPTION_PREROLL_TRACKING); ?>"
-                                           value="<?php echo esc_attr(get_option(self::OPTION_PREROLL_TRACKING)); ?>"
-                                           class="echoads-field-input"
-                                           placeholder="https://tracking.example.com/preroll"
-                                           autocomplete="url" />
-                                    <p class="echoads-field-description">Called when pre-roll advertisements start playing.</p>
-                                </div>
-
-                                <div class="echoads-field-group">
-                                    <label class="echoads-field-label"
-                                           for="<?php echo esc_attr(self::OPTION_POSTROLL_TRACKING); ?>">Post-Roll Tracking
-                                        Endpoint</label>
-                                    <input type="url"
-                                           id="<?php echo esc_attr(self::OPTION_POSTROLL_TRACKING); ?>"
-                                           name="<?php echo esc_attr(self::OPTION_POSTROLL_TRACKING); ?>"
-                                           value="<?php echo esc_attr(get_option(self::OPTION_POSTROLL_TRACKING)); ?>"
-                                           class="echoads-field-input"
-                                           placeholder="https://tracking.example.com/postroll"
-                                           autocomplete="url" />
-                                    <p class="echoads-field-description">Called when post-roll advertisements start playing.</p>
                                 </div>
                             </div>
 
@@ -306,10 +254,9 @@ class EchoAds_Settings
     public function register_settings()
     {
         register_setting('auto_send_plugin_settings', self::OPTION_API_KEY);
-        register_setting('auto_send_plugin_settings', self::OPTION_ENDPOINT);
-        register_setting('auto_send_plugin_settings', self::OPTION_AUDIO_ENDPOINT);
-        register_setting('auto_send_plugin_settings', self::OPTION_PREROLL_TRACKING);
-        register_setting('auto_send_plugin_settings', self::OPTION_POSTROLL_TRACKING);
+        register_setting('auto_send_plugin_settings', self::OPTION_BASE_URL, array(
+            'sanitize_callback' => array($this, 'sanitize_base_url')
+        ));
         register_setting('auto_send_plugin_settings', self::OPTION_TIMEOUT, array(
             'type' => 'integer',
             'sanitize_callback' => array($this, 'sanitize_timeout'),
@@ -320,6 +267,16 @@ class EchoAds_Settings
             'sanitize_callback' => array($this, 'sanitize_color'),
             'default' => '#5D33F5'
         ));
+    }
+
+    public function sanitize_base_url($value)
+    {
+        $value = trim($value);
+        // Remove protocol if present
+        $value = preg_replace('#^https?://#', '', $value);
+        // Remove trailing slash
+        $value = rtrim($value, '/');
+        return $value;
     }
 
     public function sanitize_timeout($value)
@@ -402,16 +359,25 @@ class EchoAds_Settings
             // Health check functionality
             $('#health-check-button').click(function() {
                 var apiKey = $('input[name=\"" . self::OPTION_API_KEY . "\"]').val();
-                var endpoint = $('input[name=\"" . self::OPTION_ENDPOINT . "\"]').val();
-                var healthCheckUrl = endpoint + '/health-check';
-                var statusIndicator = $('#health-status');
-                var responseDiv = $('#health-check-response');
-
-                if (!apiKey || !endpoint) {
+                var baseUrl = $('input[name=\"" . self::OPTION_BASE_URL . "\"]').val();
+                
+                if (!apiKey || !baseUrl) {
+                    var statusIndicator = $('#health-status');
+                    var responseDiv = $('#health-check-response');
                     statusIndicator.removeClass().addClass('echoads-status-indicator echoads-status-error').text('Missing Configuration');
-                    responseDiv.text('Please fill in both API Key and Endpoint URL before testing.');
+                    responseDiv.text('Please fill in both API Key and Base URL before testing.');
                     return;
                 }
+                
+                // Ensure base URL has protocol
+                var baseUrlWithProtocol = baseUrl;
+                if (!baseUrl.match(/^https?:\/\//)) {
+                    baseUrlWithProtocol = 'https://' + baseUrl;
+                }
+                
+                var healthCheckUrl = baseUrlWithProtocol + '/api/website-articles/health-check';
+                var statusIndicator = $('#health-status');
+                var responseDiv = $('#health-check-response');
 
                 statusIndicator.removeClass().addClass('echoads-status-indicator echoads-status-loading').text('Testing...');
                 responseDiv.empty();
@@ -451,24 +417,59 @@ class EchoAds_Settings
         return get_option(self::OPTION_API_KEY);
     }
 
+    private static function get_base_url_with_protocol()
+    {
+        $base_url = get_option(self::OPTION_BASE_URL);
+        if (empty($base_url)) {
+            return '';
+        }
+        // Remove protocol if present
+        $base_url = preg_replace('#^https?://#', '', $base_url);
+        // Remove trailing slash
+        $base_url = rtrim($base_url, '/');
+        // Add https protocol
+        return 'https://' . $base_url;
+    }
+
+    public static function get_base_url()
+    {
+        return get_option(self::OPTION_BASE_URL);
+    }
+
     public static function get_endpoint()
     {
-        return get_option(self::OPTION_ENDPOINT);
+        $base_url = self::get_base_url_with_protocol();
+        if (empty($base_url)) {
+            return '';
+        }
+        return trailingslashit($base_url) . 'api/website-articles';
     }
 
     public static function get_audio_endpoint()
     {
-        return get_option(self::OPTION_AUDIO_ENDPOINT);
+        $base_url = self::get_base_url_with_protocol();
+        if (empty($base_url)) {
+            return '';
+        }
+        return trailingslashit($base_url) . 'api/website-articles/audio-urls';
     }
 
     public static function get_preroll_tracking_endpoint()
     {
-        return get_option(self::OPTION_PREROLL_TRACKING);
+        $base_url = self::get_base_url_with_protocol();
+        if (empty($base_url)) {
+            return '';
+        }
+        return trailingslashit($base_url) . 'api/website-articles/track';
     }
 
     public static function get_postroll_tracking_endpoint()
     {
-        return get_option(self::OPTION_POSTROLL_TRACKING);
+        $base_url = self::get_base_url_with_protocol();
+        if (empty($base_url)) {
+            return '';
+        }
+        return trailingslashit($base_url) . 'api/website-articles/track';
     }
 
     public static function get_timeout()

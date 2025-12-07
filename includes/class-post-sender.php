@@ -349,7 +349,18 @@ class EchoAds_Post_Sender {
         }
 
         // Construct preview endpoint URL
-        $preview_endpoint = trailingslashit( $endpoint ) . 'api/website-articles/' . $post_id . '/preview';
+        $base_url = EchoAds_Settings::get_base_url();
+        if (empty($base_url)) {
+            wp_send_json_error( array( 'message' => 'Missing base URL configuration' ) );
+            return;
+        }
+        // Ensure base URL has protocol
+        $base_url_with_protocol = $base_url;
+        if (!preg_match('#^https?://#', $base_url)) {
+            $base_url_with_protocol = 'https://' . $base_url;
+        }
+        $base_url_with_protocol = rtrim($base_url_with_protocol, '/');
+        $preview_endpoint = trailingslashit( $base_url_with_protocol ) . 'api/website-articles/' . $post_id . '/preview';
 
         $args = array(
             'headers' => array(
