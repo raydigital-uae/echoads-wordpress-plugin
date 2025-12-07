@@ -375,7 +375,7 @@ class EchoAds_Settings
                     baseUrlWithProtocol = 'https://' + baseUrl;
                 }
                 
-                var healthCheckUrl = baseUrlWithProtocol + '/api/website-articles/health-check';
+                var healthCheckUrl = baseUrlWithProtocol + '/website-articles/health-check';
                 var statusIndicator = $('#health-status');
                 var responseDiv = $('#health-check-response');
 
@@ -442,7 +442,7 @@ class EchoAds_Settings
         if (empty($base_url)) {
             return '';
         }
-        return trailingslashit($base_url) . 'api/website-articles';
+        return trailingslashit($base_url) . 'website-articles';
     }
 
     public static function get_audio_endpoint()
@@ -451,7 +451,7 @@ class EchoAds_Settings
         if (empty($base_url)) {
             return '';
         }
-        return trailingslashit($base_url) . 'api/website-articles/audio-urls';
+        return trailingslashit($base_url) . 'website-articles/audio-urls';
     }
 
     public static function get_preroll_tracking_endpoint()
@@ -460,7 +460,7 @@ class EchoAds_Settings
         if (empty($base_url)) {
             return '';
         }
-        return trailingslashit($base_url) . 'api/website-articles/track';
+        return trailingslashit($base_url) . 'website-articles/track';
     }
 
     public static function get_postroll_tracking_endpoint()
@@ -469,7 +469,7 @@ class EchoAds_Settings
         if (empty($base_url)) {
             return '';
         }
-        return trailingslashit($base_url) . 'api/website-articles/track';
+        return trailingslashit($base_url) . 'website-articles/track';
     }
 
     public static function get_timeout()

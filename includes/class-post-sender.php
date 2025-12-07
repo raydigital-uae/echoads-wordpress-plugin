@@ -360,7 +360,7 @@ class EchoAds_Post_Sender {
             $base_url_with_protocol = 'https://' . $base_url;
         }
         $base_url_with_protocol = rtrim($base_url_with_protocol, '/');
-        $preview_endpoint = trailingslashit( $base_url_with_protocol ) . 'api/website-articles/' . $post_id . '/preview';
+        $preview_endpoint = trailingslashit( $base_url_with_protocol ) . 'website-articles/' . $post_id . '/preview';
 
         $args = array(
             'headers' => array(
