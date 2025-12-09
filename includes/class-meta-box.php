@@ -54,6 +54,10 @@ class EchoAds_Meta_Box {
                     <p>Audio was generated on <?php echo date( 'M j, Y g:i A', strtotime( $audio_generated ) ); ?></p>
                     <p>The audio player will be displayed on the front-end for this post.</p>
                 </div>
+                <button type="button" id="echoads-preview-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>">
+                    <span class="echoads-btn-icon">🎧</span>
+                    Preview Audio Article
+                </button>
                 <button type="button" id="echoads-regenerate-btn" class="button button-secondary" data-post-id="<?php echo esc_attr( $post->ID ); ?>">
                     Regenerate Audio
                 </button>
@@ -123,7 +127,7 @@ class EchoAds_Meta_Box {
             margin-bottom: 0;
         }
 
-        #echoads-generate-btn, #echoads-regenerate-btn {
+        #echoads-generate-btn, #echoads-regenerate-btn, #echoads-preview-btn {
             width: 100%;
             padding: 8px 12px;
             font-size: 13px;
@@ -134,7 +138,7 @@ class EchoAds_Meta_Box {
             margin-right: 6px;
         }
 
-        #echoads-generate-btn:disabled, #echoads-regenerate-btn:disabled {
+        #echoads-generate-btn:disabled, #echoads-regenerate-btn:disabled, #echoads-preview-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
         }
@@ -267,6 +271,104 @@ class EchoAds_Meta_Box {
                 
                 return html;
             }
+
+            $('#echoads-preview-btn').click(function(e) {
+                e.preventDefault();
+
+                var button = $(this);
+                var postId = button.data('post-id');
+                var responseDiv = $('#echoads-response-message');
+
+                // Update button state
+                button.prop('disabled', true);
+                button.html('<span class=\"echoads-btn-icon\">⏳</span> Loading...');
+                responseDiv.hide().removeClass('success error').empty();
+
+                $.ajax({
+                    url: echoads_ajax.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'echoads_get_preview_audio',
+                        post_id: postId,
+                        nonce: echoads_ajax.nonce
+                    },
+                    success: function(response) {
+                        if (response.success && response.data && response.data.audioUrl) {
+                            // Open audio URL in new tab
+                            window.open(response.data.audioUrl, '_blank');
+                            responseDiv.addClass('success').text('Preview audio opened in new tab').show();
+                            
+                            // Reset button state after a short delay
+                            setTimeout(function() {
+                                button.prop('disabled', false);
+                                button.html('<span class=\"echoads-btn-icon\">🎧</span> Preview Audio Article');
+                            }, 1000);
+                        } else {
+                            responseDiv.addClass('error');
+                            var errorHtml = formatErrorDetails(response.data || {});
+                            responseDiv.html(errorHtml).show();
+                            
+                            // Toggle details
+                            responseDiv.find('.echoads-toggle-details').click(function(e) {
+                                e.preventDefault();
+                                var detailsDiv = responseDiv.find('.echoads-error-details');
+                                var toggleLink = $(this);
+                                if (detailsDiv.is(':visible')) {
+                                    detailsDiv.slideUp();
+                                    toggleLink.text('Show Details');
+                                } else {
+                                    detailsDiv.slideDown();
+                                    toggleLink.text('Hide Details');
+                                }
+                            });
+                            
+                            // Reset button state
+                            button.prop('disabled', false);
+                            button.html('<span class=\"echoads-btn-icon\">🎧</span> Preview Audio Article');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        var errorData = {
+                            message: 'An error occurred: ' + error,
+                            error_message: error
+                        };
+                        
+                        // Try to parse response if available
+                        if (xhr.responseText) {
+                            try {
+                                var parsedResponse = JSON.parse(xhr.responseText);
+                                if (parsedResponse.data) {
+                                    errorData = $.extend(errorData, parsedResponse.data);
+                                }
+                            } catch(e) {
+                                errorData.response_body = xhr.responseText;
+                            }
+                        }
+                        
+                        responseDiv.addClass('error');
+                        var errorHtml = formatErrorDetails(errorData);
+                        responseDiv.html(errorHtml).show();
+                        
+                        // Toggle details
+                        responseDiv.find('.echoads-toggle-details').click(function(e) {
+                            e.preventDefault();
+                            var detailsDiv = responseDiv.find('.echoads-error-details');
+                            var toggleLink = $(this);
+                            if (detailsDiv.is(':visible')) {
+                                detailsDiv.slideUp();
+                                toggleLink.text('Show Details');
+                            } else {
+                                detailsDiv.slideDown();
+                                toggleLink.text('Hide Details');
+                            }
+                        });
+                        
+                        // Reset button state
+                        button.prop('disabled', false);
+                        button.html('<span class=\"echoads-btn-icon\">🎧</span> Preview Audio Article');
+                    }
+                });
+            });
 
             $('#echoads-generate-btn, #echoads-regenerate-btn').click(function(e) {
                 e.preventDefault();

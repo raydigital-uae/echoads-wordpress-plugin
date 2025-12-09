@@ -8,6 +8,7 @@ class EchoAds_Post_Sender {
 
     public function __construct() {
         add_action( 'wp_ajax_echoads_generate_audio', array( $this, 'handle_ajax_generate_audio' ) );
+        add_action( 'wp_ajax_echoads_get_preview_audio', array( $this, 'handle_ajax_get_preview_audio' ) );
     }
 
     public function send_post_data( $post_id ) {
@@ -314,6 +315,96 @@ class EchoAds_Post_Sender {
                 'response_headers' => $response_headers,
                 'error_message' => $is_success ? '' : 'HTTP ' . $response_code . ' response received'
             );
+        }
+    }
+
+    public function handle_ajax_get_preview_audio() {
+        check_ajax_referer( 'echoads_generate_audio', 'nonce' );
+
+        if ( ! current_user_can( 'edit_posts' ) ) {
+            wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
+            return;
+        }
+
+        $post_id = intval( $_POST['post_id'] );
+
+        if ( ! $post_id ) {
+            wp_send_json_error( array( 'message' => 'Invalid post ID' ) );
+            return;
+        }
+
+        // Check if audio has been generated
+        $audio_generated = get_post_meta( $post_id, '_echoads_audio_generated', true );
+        if ( ! $audio_generated ) {
+            wp_send_json_error( array( 'message' => 'Audio has not been generated for this post yet' ) );
+            return;
+        }
+
+        $api_key = EchoAds_Settings::get_api_key();
+        $endpoint = EchoAds_Settings::get_endpoint();
+
+        if ( empty( $api_key ) || empty( $endpoint ) ) {
+            wp_send_json_error( array( 'message' => 'Missing API key or endpoint configuration' ) );
+            return;
+        }
+
+        // Construct preview endpoint URL
+        $base_url = EchoAds_Settings::get_base_url();
+        if (empty($base_url)) {
+            wp_send_json_error( array( 'message' => 'Missing base URL configuration' ) );
+            return;
+        }
+        // Ensure base URL has protocol
+        $base_url_with_protocol = $base_url;
+        if (!preg_match('#^https?://#', $base_url)) {
+            $base_url_with_protocol = 'https://' . $base_url;
+        }
+        $base_url_with_protocol = rtrim($base_url_with_protocol, '/');
+        $preview_endpoint = trailingslashit( $base_url_with_protocol ) . 'website-articles/' . $post_id . '/preview';
+
+        $args = array(
+            'headers' => array(
+                'x-api-key' => $api_key
+            ),
+            'method' => 'GET',
+            'timeout' => 30,
+        );
+
+        $response = wp_remote_get( $preview_endpoint, $args );
+
+        if ( is_wp_error( $response ) ) {
+            $error_message = $response->get_error_message();
+            error_log( 'EchoAds Plugin: Error fetching preview audio: ' . $error_message );
+            wp_send_json_error( array( 'message' => 'Failed to fetch preview audio: ' . $error_message ) );
+            return;
+        }
+
+        $response_code = wp_remote_retrieve_response_code( $response );
+        $response_body = wp_remote_retrieve_body( $response );
+
+        if ( $response_code >= 200 && $response_code < 300 ) {
+            $response_data = json_decode( $response_body, true );
+            
+            if ( json_last_error() === JSON_ERROR_NONE && isset( $response_data['success'] ) && $response_data['success'] && isset( $response_data['data']['audioUrl'] ) ) {
+                wp_send_json_success( array( 'audioUrl' => $response_data['data']['audioUrl'] ) );
+            } else {
+                error_log( 'EchoAds Plugin: Invalid response format from preview endpoint: ' . $response_body );
+                wp_send_json_error( array( 'message' => 'Invalid response format from preview endpoint' ) );
+            }
+        } else {
+            error_log( 'EchoAds Plugin: Failed to fetch preview audio. Response code: ' . $response_code . ', Body: ' . $response_body );
+            
+            $error_message = 'Failed to fetch preview audio';
+            $parsed_body = json_decode( $response_body, true );
+            if ( json_last_error() === JSON_ERROR_NONE && is_array( $parsed_body ) && isset( $parsed_body['message'] ) ) {
+                $error_message = $parsed_body['message'];
+            }
+            
+            wp_send_json_error( array(
+                'message' => $error_message,
+                'response_code' => $response_code,
+                'response_body' => $response_body
+            ) );
         }
     }
 }
