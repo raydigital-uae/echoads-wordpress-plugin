@@ -474,11 +474,14 @@ class EchoAds_Settings
 
     public static function get_status_endpoint($external_id)
     {
+        if (empty($external_id)) {
+            return '';
+        }
         $base_url = self::get_base_url_with_protocol();
         if (empty($base_url)) {
             return '';
         }
-        return trailingslashit($base_url) . 'website-articles/' . $external_id . '/status';
+        return trailingslashit($base_url) . 'website-articles/' . absint($external_id) . '/status';
     }
 
     public static function get_timeout()

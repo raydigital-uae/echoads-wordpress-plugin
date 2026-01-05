@@ -265,7 +265,7 @@ class EchoAds_Meta_Box {
                     if (errorData.response_body_parsed) {
                         html += JSON.stringify(errorData.response_body_parsed, null, 2);
                     } else {
-                        html += $('<div>').text(errorData.response_body).html();
+                        html += \$('<div>').text(errorData.response_body).html();
                     }
                     html += '</pre></div>';
                 }
