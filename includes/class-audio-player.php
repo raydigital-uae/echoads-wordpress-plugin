@@ -143,6 +143,7 @@ class EchoAds_Audio_Player
         $unique_id = 'audio-player-' . $post_id;
         $preroll_tracking_endpoint = EchoAds_Settings::get_preroll_tracking_endpoint();
         $postroll_tracking_endpoint = EchoAds_Settings::get_postroll_tracking_endpoint();
+        $status_endpoint = EchoAds_Settings::get_status_endpoint($post_id);
         $api_key = EchoAds_Settings::get_api_key();
         $bg_color = EchoAds_Settings::get_player_bg_color();
 
@@ -252,6 +253,8 @@ class EchoAds_Audio_Player
                         postRoll: "<?php echo esc_js($audio_data['postRoll']); ?>",
                         prerollTrackingUrl: "<?php echo esc_js($preroll_tracking_endpoint); ?>",
                         postrollTrackingUrl: "<?php echo esc_js($postroll_tracking_endpoint); ?>",
+                        statusEndpoint: "<?php echo esc_js($status_endpoint); ?>",
+                        externalId: <?php echo json_encode($post_id); ?>,
                         apiKey: "<?php echo esc_js($api_key); ?>",
                         preRollAudioId: <?php echo isset($audio_data['preRollAudioId']) && $audio_data['preRollAudioId'] !== null ? json_encode($audio_data['preRollAudioId']) : 'null'; ?>,
                         postRollAudioId: <?php echo isset($audio_data['postRollAudioId']) && $audio_data['postRollAudioId'] !== null ? json_encode($audio_data['postRollAudioId']) : 'null'; ?>,

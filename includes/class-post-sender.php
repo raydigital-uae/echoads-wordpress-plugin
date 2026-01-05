@@ -9,6 +9,7 @@ class EchoAds_Post_Sender {
     public function __construct() {
         add_action( 'wp_ajax_echoads_generate_audio', array( $this, 'handle_ajax_generate_audio' ) );
         add_action( 'wp_ajax_echoads_get_preview_audio', array( $this, 'handle_ajax_get_preview_audio' ) );
+        add_action( 'wp_ajax_echoads_check_audio_status', array( $this, 'handle_ajax_check_audio_status' ) );
     }
 
     public function send_post_data( $post_id ) {
@@ -395,6 +396,78 @@ class EchoAds_Post_Sender {
             error_log( 'EchoAds Plugin: Failed to fetch preview audio. Response code: ' . $response_code . ', Body: ' . $response_body );
             
             $error_message = 'Failed to fetch preview audio';
+            $parsed_body = json_decode( $response_body, true );
+            if ( json_last_error() === JSON_ERROR_NONE && is_array( $parsed_body ) && isset( $parsed_body['message'] ) ) {
+                $error_message = $parsed_body['message'];
+            }
+            
+            wp_send_json_error( array(
+                'message' => $error_message,
+                'response_code' => $response_code,
+                'response_body' => $response_body
+            ) );
+        }
+    }
+
+    public function handle_ajax_check_audio_status() {
+        check_ajax_referer( 'echoads_generate_audio', 'nonce' );
+
+        if ( ! current_user_can( 'edit_posts' ) ) {
+            wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
+            return;
+        }
+
+        $post_id = intval( $_POST['post_id'] );
+
+        if ( ! $post_id ) {
+            wp_send_json_error( array( 'message' => 'Invalid post ID' ) );
+            return;
+        }
+
+        $api_key = EchoAds_Settings::get_api_key();
+        $status_endpoint = EchoAds_Settings::get_status_endpoint( $post_id );
+
+        if ( empty( $api_key ) || empty( $status_endpoint ) ) {
+            wp_send_json_error( array( 'message' => 'Missing API key or endpoint configuration' ) );
+            return;
+        }
+
+        $args = array(
+            'headers' => array(
+                'x-api-key' => $api_key
+            ),
+            'method' => 'GET',
+            'timeout' => 30,
+        );
+
+        $response = wp_remote_get( $status_endpoint, $args );
+
+        if ( is_wp_error( $response ) ) {
+            $error_message = $response->get_error_message();
+            error_log( 'EchoAds Plugin: Error checking audio status: ' . $error_message );
+            wp_send_json_error( array( 'message' => 'Failed to check audio status: ' . $error_message ) );
+            return;
+        }
+
+        $response_code = wp_remote_retrieve_response_code( $response );
+        $response_body = wp_remote_retrieve_body( $response );
+
+        if ( $response_code >= 200 && $response_code < 300 ) {
+            $response_data = json_decode( $response_body, true );
+            
+            if ( json_last_error() === JSON_ERROR_NONE && isset( $response_data['success'] ) && $response_data['success'] && isset( $response_data['data']['audioStatus'] ) ) {
+                wp_send_json_success( array( 
+                    'audioStatus' => $response_data['data']['audioStatus'],
+                    'audioUrl' => isset( $response_data['data']['audioUrl'] ) ? $response_data['data']['audioUrl'] : null
+                ) );
+            } else {
+                error_log( 'EchoAds Plugin: Invalid response format from status endpoint: ' . $response_body );
+                wp_send_json_error( array( 'message' => 'Invalid response format from status endpoint' ) );
+            }
+        } else {
+            error_log( 'EchoAds Plugin: Failed to check audio status. Response code: ' . $response_code . ', Body: ' . $response_body );
+            
+            $error_message = 'Failed to check audio status';
             $parsed_body = json_decode( $response_body, true );
             if ( json_last_error() === JSON_ERROR_NONE && is_array( $parsed_body ) && isset( $parsed_body['message'] ) ) {
                 $error_message = $parsed_body['message'];

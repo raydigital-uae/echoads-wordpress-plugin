@@ -54,7 +54,14 @@ class EchoAds_Meta_Box {
                     <p>Audio was generated on <?php echo date( 'M j, Y g:i A', strtotime( $audio_generated ) ); ?></p>
                     <p>The audio player will be displayed on the front-end for this post.</p>
                 </div>
-                <button type="button" id="echoads-preview-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>">
+                <div id="echoads-status-display" style="display: none; margin-bottom: 12px; padding: 8px 12px; background: #f0f0f1; border-radius: 4px;">
+                    <p style="margin: 0;"><strong>Status:</strong> <span id="echoads-audio-status">-</span></p>
+                </div>
+                <button type="button" id="echoads-check-status-btn" class="button button-secondary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="width: 100%; margin-bottom: 12px;">
+                    <span class="echoads-btn-icon">🔄</span>
+                    Check Audio Article Status
+                </button>
+                <button type="button" id="echoads-preview-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="display: none;">
                     <span class="echoads-btn-icon">🎧</span>
                     Preview Audio Article
                 </button>
@@ -69,6 +76,13 @@ class EchoAds_Meta_Box {
                 <button type="button" id="echoads-generate-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>">
                     <span class="echoads-btn-icon">🎵</span>
                     Generate Audio Article
+                </button>
+                <div id="echoads-status-display" style="display: none; margin-top: 12px; margin-bottom: 12px; padding: 8px 12px; background: #f0f0f1; border-radius: 4px;">
+                    <p style="margin: 0;"><strong>Status:</strong> <span id="echoads-audio-status">-</span></p>
+                </div>
+                <button type="button" id="echoads-check-status-btn" class="button button-secondary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="display: none; width: 100%; margin-bottom: 12px;">
+                    <span class="echoads-btn-icon">🔄</span>
+                    Check Audio Article Status
                 </button>
             <?php endif; ?>
 
@@ -127,7 +141,7 @@ class EchoAds_Meta_Box {
             margin-bottom: 0;
         }
 
-        #echoads-generate-btn, #echoads-regenerate-btn, #echoads-preview-btn {
+        #echoads-generate-btn, #echoads-regenerate-btn, #echoads-preview-btn, #echoads-check-status-btn {
             width: 100%;
             padding: 8px 12px;
             font-size: 13px;
@@ -272,104 +286,6 @@ class EchoAds_Meta_Box {
                 return html;
             }
 
-            $('#echoads-preview-btn').click(function(e) {
-                e.preventDefault();
-
-                var button = $(this);
-                var postId = button.data('post-id');
-                var responseDiv = $('#echoads-response-message');
-
-                // Update button state
-                button.prop('disabled', true);
-                button.html('<span class=\"echoads-btn-icon\">⏳</span> Loading...');
-                responseDiv.hide().removeClass('success error').empty();
-
-                $.ajax({
-                    url: echoads_ajax.ajax_url,
-                    type: 'POST',
-                    data: {
-                        action: 'echoads_get_preview_audio',
-                        post_id: postId,
-                        nonce: echoads_ajax.nonce
-                    },
-                    success: function(response) {
-                        if (response.success && response.data && response.data.audioUrl) {
-                            // Open audio URL in new tab
-                            window.open(response.data.audioUrl, '_blank');
-                            responseDiv.addClass('success').text('Preview audio opened in new tab').show();
-                            
-                            // Reset button state after a short delay
-                            setTimeout(function() {
-                                button.prop('disabled', false);
-                                button.html('<span class=\"echoads-btn-icon\">🎧</span> Preview Audio Article');
-                            }, 1000);
-                        } else {
-                            responseDiv.addClass('error');
-                            var errorHtml = formatErrorDetails(response.data || {});
-                            responseDiv.html(errorHtml).show();
-                            
-                            // Toggle details
-                            responseDiv.find('.echoads-toggle-details').click(function(e) {
-                                e.preventDefault();
-                                var detailsDiv = responseDiv.find('.echoads-error-details');
-                                var toggleLink = $(this);
-                                if (detailsDiv.is(':visible')) {
-                                    detailsDiv.slideUp();
-                                    toggleLink.text('Show Details');
-                                } else {
-                                    detailsDiv.slideDown();
-                                    toggleLink.text('Hide Details');
-                                }
-                            });
-                            
-                            // Reset button state
-                            button.prop('disabled', false);
-                            button.html('<span class=\"echoads-btn-icon\">🎧</span> Preview Audio Article');
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        var errorData = {
-                            message: 'An error occurred: ' + error,
-                            error_message: error
-                        };
-                        
-                        // Try to parse response if available
-                        if (xhr.responseText) {
-                            try {
-                                var parsedResponse = JSON.parse(xhr.responseText);
-                                if (parsedResponse.data) {
-                                    errorData = $.extend(errorData, parsedResponse.data);
-                                }
-                            } catch(e) {
-                                errorData.response_body = xhr.responseText;
-                            }
-                        }
-                        
-                        responseDiv.addClass('error');
-                        var errorHtml = formatErrorDetails(errorData);
-                        responseDiv.html(errorHtml).show();
-                        
-                        // Toggle details
-                        responseDiv.find('.echoads-toggle-details').click(function(e) {
-                            e.preventDefault();
-                            var detailsDiv = responseDiv.find('.echoads-error-details');
-                            var toggleLink = $(this);
-                            if (detailsDiv.is(':visible')) {
-                                detailsDiv.slideUp();
-                                toggleLink.text('Show Details');
-                            } else {
-                                detailsDiv.slideDown();
-                                toggleLink.text('Hide Details');
-                            }
-                        });
-                        
-                        // Reset button state
-                        button.prop('disabled', false);
-                        button.html('<span class=\"echoads-btn-icon\">🎧</span> Preview Audio Article');
-                    }
-                });
-            });
-
             $('#echoads-generate-btn, #echoads-regenerate-btn').click(function(e) {
                 e.preventDefault();
 
@@ -406,10 +322,15 @@ class EchoAds_Meta_Box {
                     success: function(response) {
                         if (response.success) {
                             responseDiv.addClass('success').text(response.data.message).show();
-                            // Reload the page to show the updated meta box
+                            // Show Check Status button and status display
+                            $('#echoads-check-status-btn').show();
+                            $('#echoads-status-display').show();
+                            // Hide generate button
+                            button.hide();
+                            // Automatically check status after a short delay
                             setTimeout(function() {
-                                location.reload();
-                            }, 1500);
+                                checkAudioStatus(postId);
+                            }, 2000);
                         } else {
                             responseDiv.addClass('error');
                             var errorHtml = formatErrorDetails(response.data || {});
@@ -481,6 +402,432 @@ class EchoAds_Meta_Box {
                         } else {
                             button.html('<span class=\"echoads-btn-icon\">🎵</span> Generate Audio Article');
                         }
+                    }
+                });
+            });
+
+            // Function to check audio status
+            function checkAudioStatus(postId) {
+                var checkStatusBtn = $('#echoads-check-status-btn');
+                var statusDisplay = $('#echoads-status-display');
+                var statusSpan = $('#echoads-audio-status');
+                var previewBtn = $('#echoads-preview-btn');
+                var regenerateBtn = $('#echoads-regenerate-btn');
+                var responseDiv = $('#echoads-response-message');
+
+                // Update button state
+                checkStatusBtn.prop('disabled', true);
+                checkStatusBtn.html('<span class=\"echoads-btn-icon\">⏳</span> Checking...');
+                statusSpan.text('Checking...');
+
+                $.ajax({
+                    url: echoads_ajax.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'echoads_check_audio_status',
+                        post_id: postId,
+                        nonce: echoads_ajax.nonce
+                    },
+                    success: function(response) {
+                        checkStatusBtn.prop('disabled', false);
+                        checkStatusBtn.html('<span class=\"echoads-btn-icon\">🔄</span> Check Audio Article Status');
+
+                        if (response.success && response.data && response.data.audioStatus) {
+                            var audioStatus = response.data.audioStatus;
+                            statusSpan.text(audioStatus);
+                            statusDisplay.show();
+
+                            // Update button visibility based on status
+                            if (audioStatus === 'COMPLETED') {
+                                previewBtn.show();
+                                regenerateBtn.prop('disabled', false);
+                                responseDiv.removeClass('error').addClass('success').text('Audio generation completed! You can now preview or regenerate.').show();
+                            } else if (audioStatus === 'PENDING' || audioStatus === 'PROCESSING') {
+                                previewBtn.hide();
+                                regenerateBtn.prop('disabled', true);
+                                responseDiv.removeClass('error').addClass('success').text('Audio is still being generated. Status: ' + audioStatus).show();
+                                // Poll again after 5 seconds
+                                setTimeout(function() {
+                                    checkAudioStatus(postId);
+                                }, 5000);
+                            } else if (audioStatus === 'FAILED' || audioStatus === 'SKIPPED') {
+                                previewBtn.hide();
+                                regenerateBtn.prop('disabled', false);
+                                responseDiv.removeClass('success').addClass('error').text('Audio generation ' + audioStatus.toLowerCase() + '. You can try regenerating.').show();
+                            } else {
+                                previewBtn.hide();
+                                regenerateBtn.prop('disabled', false);
+                            }
+                        } else {
+                            statusSpan.text('Unknown');
+                            responseDiv.removeClass('success').addClass('error');
+                            var errorHtml = formatErrorDetails(response.data || {});
+                            responseDiv.html(errorHtml).show();
+                            
+                            // Toggle details
+                            responseDiv.find('.echoads-toggle-details').click(function(e) {
+                                e.preventDefault();
+                                var detailsDiv = responseDiv.find('.echoads-error-details');
+                                var toggleLink = $(this);
+                                if (detailsDiv.is(':visible')) {
+                                    detailsDiv.slideUp();
+                                    toggleLink.text('Show Details');
+                                } else {
+                                    detailsDiv.slideDown();
+                                    toggleLink.text('Hide Details');
+                                }
+                            });
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        checkStatusBtn.prop('disabled', false);
+                        checkStatusBtn.html('<span class=\"echoads-btn-icon\">🔄</span> Check Audio Article Status');
+                        statusSpan.text('Error');
+                        
+                        var errorData = {
+                            message: 'An error occurred: ' + error,
+                            error_message: error
+                        };
+                        
+                        // Try to parse response if available
+                        if (xhr.responseText) {
+                            try {
+                                var parsedResponse = JSON.parse(xhr.responseText);
+                                if (parsedResponse.data) {
+                                    errorData = $.extend(errorData, parsedResponse.data);
+                                }
+                            } catch(e) {
+                                errorData.response_body = xhr.responseText;
+                            }
+                        }
+                        
+                        responseDiv.removeClass('success').addClass('error');
+                        var errorHtml = formatErrorDetails(errorData);
+                        responseDiv.html(errorHtml).show();
+                        
+                        // Toggle details
+                        responseDiv.find('.echoads-toggle-details').click(function(e) {
+                            e.preventDefault();
+                            var detailsDiv = responseDiv.find('.echoads-error-details');
+                            var toggleLink = $(this);
+                            if (detailsDiv.is(':visible')) {
+                                detailsDiv.slideUp();
+                                toggleLink.text('Show Details');
+                            } else {
+                                detailsDiv.slideDown();
+                                toggleLink.text('Hide Details');
+                            }
+                        });
+                    }
+                });
+            }
+
+            // Check Status button click handler
+            $('#echoads-check-status-btn').click(function(e) {
+                e.preventDefault();
+                var postId = $(this).data('post-id');
+                checkAudioStatus(postId);
+            });
+
+            // Preview button - check status before showing preview
+            $('#echoads-preview-btn').click(function(e) {
+                e.preventDefault();
+
+                var button = $(this);
+                var postId = button.data('post-id');
+                var responseDiv = $('#echoads-response-message');
+
+                // First check status
+                $.ajax({
+                    url: echoads_ajax.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'echoads_check_audio_status',
+                        post_id: postId,
+                        nonce: echoads_ajax.nonce
+                    },
+                    success: function(response) {
+                        if (response.success && response.data && response.data.audioStatus === 'COMPLETED') {
+                            // Status is COMPLETED, proceed with preview
+                            button.prop('disabled', true);
+                            button.html('<span class=\"echoads-btn-icon\">⏳</span> Loading...');
+                            responseDiv.hide().removeClass('success error').empty();
+
+                            $.ajax({
+                                url: echoads_ajax.ajax_url,
+                                type: 'POST',
+                                data: {
+                                    action: 'echoads_get_preview_audio',
+                                    post_id: postId,
+                                    nonce: echoads_ajax.nonce
+                                },
+                                success: function(previewResponse) {
+                                    if (previewResponse.success && previewResponse.data && previewResponse.data.audioUrl) {
+                                        // Open audio URL in new tab
+                                        window.open(previewResponse.data.audioUrl, '_blank');
+                                        responseDiv.addClass('success').text('Preview audio opened in new tab').show();
+                                        
+                                        // Reset button state after a short delay
+                                        setTimeout(function() {
+                                            button.prop('disabled', false);
+                                            button.html('<span class=\"echoads-btn-icon\">🎧</span> Preview Audio Article');
+                                        }, 1000);
+                                    } else {
+                                        responseDiv.addClass('error');
+                                        var errorHtml = formatErrorDetails(previewResponse.data || {});
+                                        responseDiv.html(errorHtml).show();
+                                        
+                                        // Toggle details
+                                        responseDiv.find('.echoads-toggle-details').click(function(e) {
+                                            e.preventDefault();
+                                            var detailsDiv = responseDiv.find('.echoads-error-details');
+                                            var toggleLink = $(this);
+                                            if (detailsDiv.is(':visible')) {
+                                                detailsDiv.slideUp();
+                                                toggleLink.text('Show Details');
+                                            } else {
+                                                detailsDiv.slideDown();
+                                                toggleLink.text('Hide Details');
+                                            }
+                                        });
+                                        
+                                        // Reset button state
+                                        button.prop('disabled', false);
+                                        button.html('<span class=\"echoads-btn-icon\">🎧</span> Preview Audio Article');
+                                    }
+                                },
+                                error: function(xhr, status, error) {
+                                    var errorData = {
+                                        message: 'An error occurred: ' + error,
+                                        error_message: error
+                                    };
+                                    
+                                    // Try to parse response if available
+                                    if (xhr.responseText) {
+                                        try {
+                                            var parsedResponse = JSON.parse(xhr.responseText);
+                                            if (parsedResponse.data) {
+                                                errorData = $.extend(errorData, parsedResponse.data);
+                                            }
+                                        } catch(e) {
+                                            errorData.response_body = xhr.responseText;
+                                        }
+                                    }
+                                    
+                                    responseDiv.addClass('error');
+                                    var errorHtml = formatErrorDetails(errorData);
+                                    responseDiv.html(errorHtml).show();
+                                    
+                                    // Toggle details
+                                    responseDiv.find('.echoads-toggle-details').click(function(e) {
+                                        e.preventDefault();
+                                        var detailsDiv = responseDiv.find('.echoads-error-details');
+                                        var toggleLink = $(this);
+                                        if (detailsDiv.is(':visible')) {
+                                            detailsDiv.slideUp();
+                                            toggleLink.text('Show Details');
+                                        } else {
+                                            detailsDiv.slideDown();
+                                            toggleLink.text('Hide Details');
+                                        }
+                                    });
+                                    
+                                    // Reset button state
+                                    button.prop('disabled', false);
+                                    button.html('<span class=\"echoads-btn-icon\">🎧</span> Preview Audio Article');
+                                }
+                            });
+                        } else {
+                            // Status is not COMPLETED
+                            responseDiv.removeClass('success').addClass('error').text('Audio is not ready yet. Current status: ' + (response.data && response.data.audioStatus ? response.data.audioStatus : 'Unknown')).show();
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        responseDiv.removeClass('success').addClass('error').text('Failed to check audio status: ' + error).show();
+                    }
+                });
+            });
+
+            // Regenerate button - check status before allowing regeneration
+            $('#echoads-regenerate-btn').click(function(e) {
+                e.preventDefault();
+
+                var button = $(this);
+                var postId = button.data('post-id');
+                var responseDiv = $('#echoads-response-message');
+
+                // First check status
+                $.ajax({
+                    url: echoads_ajax.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'echoads_check_audio_status',
+                        post_id: postId,
+                        nonce: echoads_ajax.nonce
+                    },
+                    success: function(response) {
+                        if (response.success && response.data && response.data.audioStatus) {
+                            var audioStatus = response.data.audioStatus;
+                            
+                            // Don't allow regeneration if status is PENDING or PROCESSING
+                            if (audioStatus === 'PENDING' || audioStatus === 'PROCESSING') {
+                                responseDiv.removeClass('success').addClass('error').text('Cannot regenerate while audio is ' + audioStatus.toLowerCase() + '. Please wait for the current generation to complete.').show();
+                                return;
+                            }
+                        }
+                        
+                        // Proceed with regeneration
+                        button.prop('disabled', true);
+                        button.text('Regenerating...');
+                        responseDiv.hide().removeClass('success error').empty();
+
+                        $.ajax({
+                            url: echoads_ajax.ajax_url,
+                            type: 'POST',
+                            data: {
+                                action: 'echoads_generate_audio',
+                                post_id: postId,
+                                regenerate: 'true',
+                                nonce: echoads_ajax.nonce
+                            },
+                            success: function(regenerateResponse) {
+                                if (regenerateResponse.success) {
+                                    responseDiv.addClass('success').text(regenerateResponse.data.message).show();
+                                    // Show Check Status button and status display
+                                    $('#echoads-check-status-btn').show();
+                                    $('#echoads-status-display').show();
+                                    // Hide preview button until status is COMPLETED
+                                    $('#echoads-preview-btn').hide();
+                                    // Automatically check status after a short delay
+                                    setTimeout(function() {
+                                        checkAudioStatus(postId);
+                                    }, 2000);
+                                } else {
+                                    responseDiv.addClass('error');
+                                    var errorHtml = formatErrorDetails(regenerateResponse.data || {});
+                                    responseDiv.html(errorHtml).show();
+                                    
+                                    // Toggle details
+                                    responseDiv.find('.echoads-toggle-details').click(function(e) {
+                                        e.preventDefault();
+                                        var detailsDiv = responseDiv.find('.echoads-error-details');
+                                        var toggleLink = $(this);
+                                        if (detailsDiv.is(':visible')) {
+                                            detailsDiv.slideUp();
+                                            toggleLink.text('Show Details');
+                                        } else {
+                                            detailsDiv.slideDown();
+                                            toggleLink.text('Hide Details');
+                                        }
+                                    });
+                                }
+                                
+                                // Reset button state
+                                button.prop('disabled', false);
+                                button.text('Regenerate Audio');
+                            },
+                            error: function(xhr, status, error) {
+                                var errorData = {
+                                    message: 'An error occurred: ' + error,
+                                    error_message: error
+                                };
+                                
+                                // Try to parse response if available
+                                if (xhr.responseText) {
+                                    try {
+                                        var parsedResponse = JSON.parse(xhr.responseText);
+                                        if (parsedResponse.data) {
+                                            errorData = $.extend(errorData, parsedResponse.data);
+                                        }
+                                    } catch(e) {
+                                        errorData.response_body = xhr.responseText;
+                                    }
+                                }
+                                
+                                responseDiv.addClass('error');
+                                var errorHtml = formatErrorDetails(errorData);
+                                responseDiv.html(errorHtml).show();
+                                
+                                // Toggle details
+                                responseDiv.find('.echoads-toggle-details').click(function(e) {
+                                    e.preventDefault();
+                                    var detailsDiv = responseDiv.find('.echoads-error-details');
+                                    var toggleLink = $(this);
+                                    if (detailsDiv.is(':visible')) {
+                                        detailsDiv.slideUp();
+                                        toggleLink.text('Show Details');
+                                    } else {
+                                        detailsDiv.slideDown();
+                                        toggleLink.text('Hide Details');
+                                    }
+                                });
+                                
+                                // Reset button state
+                                button.prop('disabled', false);
+                                button.text('Regenerate Audio');
+                            }
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        // If status check fails, still allow regeneration but show warning
+                        responseDiv.removeClass('success').addClass('error').text('Could not verify current status. Proceeding with regeneration...').show();
+                        
+                        // Proceed with regeneration
+                        button.prop('disabled', true);
+                        button.text('Regenerating...');
+
+                        $.ajax({
+                            url: echoads_ajax.ajax_url,
+                            type: 'POST',
+                            data: {
+                                action: 'echoads_generate_audio',
+                                post_id: postId,
+                                regenerate: 'true',
+                                nonce: echoads_ajax.nonce
+                            },
+                            success: function(regenerateResponse) {
+                                if (regenerateResponse.success) {
+                                    responseDiv.addClass('success').text(regenerateResponse.data.message).show();
+                                    $('#echoads-check-status-btn').show();
+                                    $('#echoads-status-display').show();
+                                    $('#echoads-preview-btn').hide();
+                                    setTimeout(function() {
+                                        checkAudioStatus(postId);
+                                    }, 2000);
+                                } else {
+                                    responseDiv.addClass('error');
+                                    var errorHtml = formatErrorDetails(regenerateResponse.data || {});
+                                    responseDiv.html(errorHtml).show();
+                                }
+                                
+                                button.prop('disabled', false);
+                                button.text('Regenerate Audio');
+                            },
+                            error: function(xhr, status, error) {
+                                var errorData = {
+                                    message: 'An error occurred: ' + error,
+                                    error_message: error
+                                };
+                                
+                                if (xhr.responseText) {
+                                    try {
+                                        var parsedResponse = JSON.parse(xhr.responseText);
+                                        if (parsedResponse.data) {
+                                            errorData = $.extend(errorData, parsedResponse.data);
+                                        }
+                                    } catch(e) {
+                                        errorData.response_body = xhr.responseText;
+                                    }
+                                }
+                                
+                                responseDiv.addClass('error');
+                                var errorHtml = formatErrorDetails(errorData);
+                                responseDiv.html(errorHtml).show();
+                                
+                                button.prop('disabled', false);
+                                button.text('Regenerate Audio');
+                            }
+                        });
                     }
                 });
             });

@@ -17,14 +17,115 @@ window.EchoAdsAudioController = {
         var statusDisplay = document.getElementById(playerId + "-status");
         var volumeBtn = document.getElementById(playerId + "-volume-btn");
         var volumeInput = document.getElementById(playerId + "-volume-input");
-        var playIcon = playPauseBtn.querySelector(".play-icon");
-        var pauseIcon = playPauseBtn.querySelector(".pause-icon");
+        var playIcon = playPauseBtn ? playPauseBtn.querySelector(".play-icon") : null;
+        var pauseIcon = playPauseBtn ? playPauseBtn.querySelector(".pause-icon") : null;
         var playerContainer = document.getElementById(playerId);
         
-        if (!audio || !playPauseBtn || !progressBar) {
-            console.error("Audio player elements not found for", playerId);
+        if (!playerContainer) {
+            console.error("Audio player container not found for", playerId);
             return;
         }
+        
+        // Define updatePlayerState function early so it can be used in status checking
+        function updatePlayerState(state) {
+            if (statusDisplay) {
+                statusDisplay.textContent = state;
+            }
+            if (playerContainer) {
+                playerContainer.className = playerContainer.className.replace(/\s*(loading|playing|paused)/g, '');
+                if (state === "Loading...") {
+                    playerContainer.classList.add('loading');
+                } else if (state === "Playing") {
+                    playerContainer.classList.add('playing');
+                } else if (state === "Paused") {
+                    playerContainer.classList.add('paused');
+                }
+            }
+        }
+        
+        // Check audio status before initializing player
+        if (audioData.statusEndpoint && audioData.externalId) {
+            checkAudioStatusAndInit();
+        } else {
+            // If no status endpoint, proceed with initialization (backward compatibility)
+            initializePlayer();
+        }
+        
+        function checkAudioStatusAndInit() {
+            updatePlayerState("Checking status...");
+            
+            // Make request to check status
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', audioData.statusEndpoint, true);
+            xhr.setRequestHeader('x-api-key', audioData.apiKey || '');
+            
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        var response = JSON.parse(xhr.responseText);
+                        if (response.success && response.data && response.data.audioStatus) {
+                            var audioStatus = response.data.audioStatus;
+                            
+                            if (audioStatus === 'COMPLETED') {
+                                // Status is COMPLETED, proceed with initialization
+                                initializePlayer();
+                            } else if (audioStatus === 'PENDING' || audioStatus === 'PROCESSING') {
+                                // Show generating message
+                                updatePlayerState("Generating audio...");
+                                if (statusDisplay) {
+                                    statusDisplay.textContent = "Audio is being generated. Please check back later.";
+                                }
+                                if (playPauseBtn) {
+                                    playPauseBtn.disabled = true;
+                                }
+                                // Poll again after 10 seconds
+                                setTimeout(checkAudioStatusAndInit, 10000);
+                            } else if (audioStatus === 'FAILED' || audioStatus === 'SKIPPED') {
+                                // Show error message
+                                updatePlayerState("Error");
+                                if (statusDisplay) {
+                                    statusDisplay.textContent = "Audio generation " + audioStatus.toLowerCase() + ".";
+                                }
+                                if (playPauseBtn) {
+                                    playPauseBtn.disabled = true;
+                                }
+                                playerContainer.style.opacity = '0.6';
+                            } else {
+                                // Unknown status, proceed with initialization anyway
+                                console.warn("Unknown audio status:", audioStatus);
+                                initializePlayer();
+                            }
+                        } else {
+                            // Invalid response format, proceed with initialization
+                            console.warn("Invalid status response format");
+                            initializePlayer();
+                        }
+                    } catch (e) {
+                        console.error("Error parsing status response:", e);
+                        // On error, proceed with initialization
+                        initializePlayer();
+                    }
+                } else {
+                    // HTTP error, proceed with initialization (backward compatibility)
+                    console.warn("Status check failed with HTTP", xhr.status);
+                    initializePlayer();
+                }
+            };
+            
+            xhr.onerror = function() {
+                console.error("Error checking audio status");
+                // On error, proceed with initialization (backward compatibility)
+                initializePlayer();
+            };
+            
+            xhr.send();
+        }
+        
+        function initializePlayer() {
+            if (!audio || !playPauseBtn || !progressBar) {
+                console.error("Audio player elements not found for", playerId);
+                return;
+            }
         
         var currentTrack = 0;
         var isPlaying = false;
@@ -38,20 +139,6 @@ window.EchoAdsAudioController = {
         // Initialize volume
         if (volumeInput) {
             audio.volume = volumeInput.value / 100;
-        }
-        
-        function updatePlayerState(state) {
-            if (statusDisplay) {
-                statusDisplay.textContent = state;
-            }
-            playerContainer.className = playerContainer.className.replace(/\s*(loading|playing|paused)/g, '');
-            if (state === "Loading...") {
-                playerContainer.classList.add('loading');
-            } else if (state === "Playing") {
-                playerContainer.classList.add('playing');
-            } else if (state === "Paused") {
-                playerContainer.classList.add('paused');
-            }
         }
         
         function loadTrack(index) {
@@ -409,6 +496,7 @@ window.EchoAdsAudioController = {
         } else {
             updatePlayerState("No audio available");
             playPauseBtn.disabled = true;
+        }
         }
     }
 };

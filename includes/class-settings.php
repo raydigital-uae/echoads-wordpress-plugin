@@ -472,6 +472,15 @@ class EchoAds_Settings
         return trailingslashit($base_url) . 'website-articles/track';
     }
 
+    public static function get_status_endpoint($external_id)
+    {
+        $base_url = self::get_base_url_with_protocol();
+        if (empty($base_url)) {
+            return '';
+        }
+        return trailingslashit($base_url) . 'website-articles/' . $external_id . '/status';
+    }
+
     public static function get_timeout()
     {
         $timeout = get_option(self::OPTION_TIMEOUT, 120);
