@@ -73,13 +73,11 @@ window.EchoAdsAudioController = {
                                 // Show generating message
                                 updatePlayerState("Generating audio...");
                                 if (statusDisplay) {
-                                    statusDisplay.textContent = "Audio is being generated. Please check back later.";
+                                    statusDisplay.textContent = "Audio is being generated. Please refresh the page to check status again.";
                                 }
                                 if (playPauseBtn) {
                                     playPauseBtn.disabled = true;
                                 }
-                                // Poll again after 10 seconds
-                                setTimeout(checkAudioStatusAndInit, 10000);
                             } else if (audioStatus === 'FAILED' || audioStatus === 'SKIPPED') {
                                 // Show error message
                                 updatePlayerState("Error");
