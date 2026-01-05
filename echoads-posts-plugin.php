@@ -2,7 +2,7 @@
 /*
 Plugin Name: EchoAds Audio Player
 Description: Sends post data to a specified endpoint, and adds an audio player to the post content, with pre-roll & post-roll ads.
-Version: 1.0.0
+Version: 1.0.1
 Author: Hussein Shaltout 
 */
 
