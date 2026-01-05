@@ -441,7 +441,7 @@ class EchoAds_Meta_Box {
                             } else if (audioStatus === 'PENDING' || audioStatus === 'PROCESSING') {
                                 previewBtn.hide();
                                 regenerateBtn.prop('disabled', true);
-                                responseDiv.removeClass('error').addClass('success').text('Audio is still being generated. Status: ' + audioStatus + '. Click Check Audio Article Status to refresh.').show();
+                                responseDiv.removeClass('error').addClass('success').text('Audio is still being generated. Status: ' + audioStatus + '. Click "Check Audio Article Status" to refresh.').show();
                             } else if (audioStatus === 'FAILED' || audioStatus === 'SKIPPED') {
                                 previewBtn.hide();
                                 regenerateBtn.prop('disabled', false);
