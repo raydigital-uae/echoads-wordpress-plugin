@@ -327,6 +327,10 @@ class EchoAds_Meta_Box {
                             $('#echoads-status-display').show();
                             // Hide generate button
                             button.hide();
+                            // Automatically check status after a short delay
+                            setTimeout(function() {
+                                checkAudioStatus(postId);
+                            }, 2000);
                         } else {
                             responseDiv.addClass('error');
                             var errorHtml = formatErrorDetails(response.data || {});
@@ -441,7 +445,11 @@ class EchoAds_Meta_Box {
                             } else if (audioStatus === 'PENDING' || audioStatus === 'PROCESSING') {
                                 previewBtn.hide();
                                 regenerateBtn.prop('disabled', true);
-                                responseDiv.removeClass('error').addClass('success').text('Audio is still being generated. Status: ' + audioStatus + '. Click "Check Audio Article Status" to refresh.').show();
+                                responseDiv.removeClass('error').addClass('success').text('Audio is still being generated. Status: ' + audioStatus).show();
+                                // Poll again after 5 seconds
+                                setTimeout(function() {
+                                    checkAudioStatus(postId);
+                                }, 5000);
                             } else if (audioStatus === 'FAILED' || audioStatus === 'SKIPPED') {
                                 previewBtn.hide();
                                 regenerateBtn.prop('disabled', false);
@@ -690,6 +698,10 @@ class EchoAds_Meta_Box {
                                     $('#echoads-status-display').show();
                                     // Hide preview button until status is COMPLETED
                                     $('#echoads-preview-btn').hide();
+                                    // Automatically check status after a short delay
+                                    setTimeout(function() {
+                                        checkAudioStatus(postId);
+                                    }, 2000);
                                 } else {
                                     responseDiv.addClass('error');
                                     var errorHtml = formatErrorDetails(regenerateResponse.data || {});
@@ -779,6 +791,9 @@ class EchoAds_Meta_Box {
                                     $('#echoads-check-status-btn').show();
                                     $('#echoads-status-display').show();
                                     $('#echoads-preview-btn').hide();
+                                    setTimeout(function() {
+                                        checkAudioStatus(postId);
+                                    }, 2000);
                                 } else {
                                     responseDiv.addClass('error');
                                     var errorHtml = formatErrorDetails(regenerateResponse.data || {});
