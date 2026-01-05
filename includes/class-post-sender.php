@@ -8,6 +8,7 @@ class EchoAds_Post_Sender {
 
     public function __construct() {
         add_action( 'wp_ajax_echoads_generate_audio', array( $this, 'handle_ajax_generate_audio' ) );
+        add_action( 'wp_ajax_echoads_check_audio_status', array( $this, 'handle_ajax_check_status' ) );
     }
 
     public function send_post_data( $post_id ) {
@@ -162,6 +163,15 @@ class EchoAds_Post_Sender {
         // Check if this is a regeneration request
         $is_regenerate = isset( $_POST['regenerate'] ) && $_POST['regenerate'] === 'true';
 
+        // For regenerate requests, check current status first
+        if ( $is_regenerate ) {
+            $current_status = $this->fetch_audio_status( $post_id );
+            if ( in_array( $current_status, array( 'PENDING', 'PROCESSING' ), true ) ) {
+                wp_send_json_error( array( 'message' => 'Cannot regenerate while audio is being processed. Current status: ' . $current_status ) );
+                return;
+            }
+        }
+
         if ( ! $is_regenerate && get_post_meta( $post_id, '_echoads_audio_generated', true ) ) {
             wp_send_json_error( array( 'message' => 'Audio already generated for this post' ) );
             return;
@@ -206,7 +216,8 @@ class EchoAds_Post_Sender {
         error_log( 'EchoAds Plugin: Current post meta _echoads_audio_generated: ' . get_post_meta( $post_id, '_echoads_audio_generated', true ) );
 
         if ( $result['success'] ) {
-            update_post_meta( $post_id, '_echoads_audio_generated', current_time( 'mysql' ) );
+            // Store that audio was requested, but don't mark as generated until status is COMPLETED
+            update_post_meta( $post_id, '_echoads_audio_requested', current_time( 'mysql' ) );
             error_log( 'EchoAds Plugin: Post meta updated successfully' );
             wp_send_json_success( array( 'message' => 'Audio generation initiated successfully' ) );
         } else {
@@ -315,5 +326,87 @@ class EchoAds_Post_Sender {
                 'error_message' => $is_success ? '' : 'HTTP ' . $response_code . ' response received'
             );
         }
+    }
+
+    public function handle_ajax_check_status() {
+        check_ajax_referer( 'echoads_generate_audio', 'nonce' );
+
+        if ( ! current_user_can( 'edit_posts' ) ) {
+            wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
+            return;
+        }
+
+        $post_id = intval( $_POST['post_id'] );
+
+        if ( ! $post_id ) {
+            wp_send_json_error( array( 'message' => 'Invalid post ID' ) );
+            return;
+        }
+
+        $status_result = $this->fetch_audio_status( $post_id );
+
+        if ( $status_result === false ) {
+            wp_send_json_error( array( 'message' => 'Failed to fetch audio status' ) );
+            return;
+        }
+
+        // Update post meta based on status
+        update_post_meta( $post_id, '_echoads_audio_status', $status_result );
+
+        if ( $status_result === 'COMPLETED' ) {
+            // Only mark as generated when status is COMPLETED
+            update_post_meta( $post_id, '_echoads_audio_generated', current_time( 'mysql' ) );
+        }
+
+        wp_send_json_success( array(
+            'status' => $status_result,
+            'message' => 'Status checked successfully'
+        ) );
+    }
+
+    private function fetch_audio_status( $post_id ) {
+        $api_key = EchoAds_Settings::get_api_key();
+        $endpoint = EchoAds_Settings::get_endpoint();
+
+        if ( empty( $api_key ) || empty( $endpoint ) ) {
+            error_log( 'EchoAds Plugin: Missing API key or endpoint configuration for status check' );
+            return false;
+        }
+
+        // Construct status endpoint URL
+        $status_endpoint = rtrim( $endpoint, '/' ) . '/api/website-articles/' . $post_id . '/status';
+
+        $args = array(
+            'headers' => array(
+                'x-api-key' => $api_key
+            ),
+            'timeout' => 30
+        );
+
+        $response = wp_remote_get( $status_endpoint, $args );
+
+        if ( is_wp_error( $response ) ) {
+            error_log( 'EchoAds Plugin: Error fetching audio status: ' . $response->get_error_message() );
+            return false;
+        }
+
+        $response_code = wp_remote_retrieve_response_code( $response );
+        $body = wp_remote_retrieve_body( $response );
+        $status_info = json_decode( $body, true );
+
+        if ( $response_code < 200 || $response_code >= 300 ) {
+            error_log( 'EchoAds Plugin: Failed to fetch audio status. Response code: ' . $response_code . ', Body: ' . $body );
+            return false;
+        }
+
+        // Parse response according to expected format
+        if ( isset( $status_info['success'] ) && $status_info['success'] === true && isset( $status_info['data']['audioStatus'] ) ) {
+            return $status_info['data']['audioStatus'];
+        } elseif ( isset( $status_info['audioStatus'] ) ) {
+            return $status_info['audioStatus'];
+        }
+
+        error_log( 'EchoAds Plugin: Unexpected status response format: ' . $body );
+        return false;
     }
 }

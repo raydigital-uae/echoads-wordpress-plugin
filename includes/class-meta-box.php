@@ -24,12 +24,15 @@ class EchoAds_Meta_Box {
 
     public function render_meta_box( $post ) {
         $audio_generated = get_post_meta( $post->ID, '_echoads_audio_generated', true );
+        $audio_requested = get_post_meta( $post->ID, '_echoads_audio_requested', true );
+        $audio_status = get_post_meta( $post->ID, '_echoads_audio_status', true );
         $api_key = EchoAds_Settings::get_api_key();
         $endpoint = EchoAds_Settings::get_endpoint();
 
         $has_config = ! empty( $api_key ) && ! empty( $endpoint );
         $post_status = isset( $post->post_status ) ? $post->post_status : '';
         $is_valid_status = in_array( $post_status, array( 'draft', 'publish' ), true );
+        $post_permalink = get_permalink( $post->ID );
 
         wp_nonce_field( 'echoads_generate_audio', 'echoads_generate_audio_nonce' );
         ?>
@@ -48,14 +51,42 @@ class EchoAds_Meta_Box {
                     <span class="echoads-btn-icon">🎵</span>
                     Generate Audio Article
                 </button>
-            <?php elseif ( $audio_generated ) : ?>
+            <?php elseif ( $audio_generated && $audio_status === 'COMPLETED' ) : ?>
                 <div class="echoads-notice echoads-notice-success">
                     <p><strong>Audio Generated</strong></p>
                     <p>Audio was generated on <?php echo date( 'M j, Y g:i A', strtotime( $audio_generated ) ); ?></p>
                     <p>The audio player will be displayed on the front-end for this post.</p>
                 </div>
+                <button type="button" id="echoads-preview-btn" class="button button-secondary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" onclick="window.open('<?php echo esc_js( $post_permalink ); ?>', '_blank');" style="width: 100%; margin-bottom: 8px;">
+                    Preview Post
+                </button>
                 <button type="button" id="echoads-regenerate-btn" class="button button-secondary" data-post-id="<?php echo esc_attr( $post->ID ); ?>">
                     Regenerate Audio
+                </button>
+            <?php elseif ( $audio_requested ) : ?>
+                <?php if ( $audio_status === 'PENDING' || $audio_status === 'PROCESSING' ) : ?>
+                    <div class="echoads-notice echoads-notice-info">
+                        <p><strong>Audio Generation In Progress</strong></p>
+                        <p>Status: <strong><?php echo esc_html( $audio_status ); ?></strong></p>
+                        <p>Please check the status to see when audio generation is complete.</p>
+                    </div>
+                <?php elseif ( $audio_status === 'FAILED' || $audio_status === 'SKIPPED' ) : ?>
+                    <div class="echoads-notice echoads-notice-error">
+                        <p><strong>Audio Generation <?php echo esc_html( $audio_status ); ?></strong></p>
+                        <p>Status: <strong><?php echo esc_html( $audio_status ); ?></strong></p>
+                        <p>You can try regenerating the audio.</p>
+                    </div>
+                    <button type="button" id="echoads-regenerate-btn" class="button button-secondary" data-post-id="<?php echo esc_attr( $post->ID ); ?>">
+                        Regenerate Audio
+                    </button>
+                <?php else : ?>
+                    <div class="echoads-notice echoads-notice-info">
+                        <p><strong>Audio Generation Requested</strong></p>
+                        <p>Audio generation was requested. Please check the status to see the current state.</p>
+                    </div>
+                <?php endif; ?>
+                <button type="button" id="echoads-check-status-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="width: 100%;">
+                    Check Audio Article Status
                 </button>
             <?php else : ?>
                 <div class="echoads-notice echoads-notice-info">
@@ -123,21 +154,22 @@ class EchoAds_Meta_Box {
             margin-bottom: 0;
         }
 
-        #echoads-generate-btn, #echoads-regenerate-btn {
+        #echoads-generate-btn, #echoads-regenerate-btn, #echoads-check-status-btn, #echoads-preview-btn {
             width: 100%;
             padding: 8px 12px;
             font-size: 13px;
             margin-bottom: 12px;
         }
 
+        #echoads-generate-btn:disabled, #echoads-regenerate-btn:disabled, #echoads-check-status-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .echoads-btn-icon {
             margin-right: 6px;
         }
 
-        #echoads-generate-btn:disabled, #echoads-regenerate-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
 
         #echoads-response-message {
             margin-top: 12px;
@@ -155,6 +187,12 @@ class EchoAds_Meta_Box {
             background: #fbeaea;
             border-left: 4px solid #dc3232;
             color: #dc3232;
+        }
+
+        #echoads-response-message.info {
+            background: #e7f3ff;
+            border-left: 4px solid #0073aa;
+            color: #0073aa;
         }
 
         .echoads-info {
@@ -304,10 +342,10 @@ class EchoAds_Meta_Box {
                     success: function(response) {
                         if (response.success) {
                             responseDiv.addClass('success').text(response.data.message).show();
-                            // Reload the page to show the updated meta box
+                            // Don't reload immediately - show Check Status button instead
                             setTimeout(function() {
                                 location.reload();
-                            }, 1500);
+                            }, 2000);
                         } else {
                             responseDiv.addClass('error');
                             var errorHtml = formatErrorDetails(response.data || {});
@@ -379,6 +417,78 @@ class EchoAds_Meta_Box {
                         } else {
                             button.html('<span class=\"echoads-btn-icon\">🎵</span> Generate Audio Article');
                         }
+                    }
+                });
+            });
+
+            // Check Status button handler
+            $(document).on('click', '#echoads-check-status-btn', function(e) {
+                e.preventDefault();
+
+                var button = $(this);
+                var postId = button.data('post-id');
+                var responseDiv = $('#echoads-response-message');
+
+                // Update button state
+                button.prop('disabled', true);
+                button.text('Checking...');
+                responseDiv.hide().removeClass('success error').empty();
+
+                $.ajax({
+                    url: echoads_ajax.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'echoads_check_audio_status',
+                        post_id: postId,
+                        nonce: echoads_ajax.nonce
+                    },
+                    success: function(response) {
+                        if (response.success && response.data.status) {
+                            var status = response.data.status;
+                            var statusMessage = 'Status: ' + status;
+                            
+                            if (status === 'COMPLETED') {
+                                responseDiv.addClass('success').html('<strong>Audio Generation Complete!</strong><br>' + statusMessage).show();
+                                // Reload to show Preview and Regenerate buttons
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 1500);
+                            } else if (status === 'PENDING' || status === 'PROCESSING') {
+                                responseDiv.addClass('info').html('<strong>Audio Still Processing</strong><br>' + statusMessage + '<br>Please check again later.').show();
+                                button.prop('disabled', false);
+                                button.text('Check Audio Article Status');
+                            } else if (status === 'FAILED' || status === 'SKIPPED') {
+                                responseDiv.addClass('error').html('<strong>Audio Generation ' + status + '</strong><br>' + statusMessage + '<br>You can try regenerating.').show();
+                                // Reload to show Regenerate button
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 1500);
+                            } else {
+                                responseDiv.addClass('info').html('<strong>Status Checked</strong><br>' + statusMessage).show();
+                                button.prop('disabled', false);
+                                button.text('Check Audio Article Status');
+                            }
+                        } else {
+                            responseDiv.addClass('error').html('<strong>Error</strong><br>' + (response.data.message || 'Failed to check status')).show();
+                            button.prop('disabled', false);
+                            button.text('Check Audio Article Status');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        var errorMsg = 'An error occurred: ' + error;
+                        if (xhr.responseText) {
+                            try {
+                                var parsedResponse = JSON.parse(xhr.responseText);
+                                if (parsedResponse.data && parsedResponse.data.message) {
+                                    errorMsg = parsedResponse.data.message;
+                                }
+                            } catch(e) {
+                                // Use default error message
+                            }
+                        }
+                        responseDiv.addClass('error').html('<strong>Error</strong><br>' + errorMsg).show();
+                        button.prop('disabled', false);
+                        button.text('Check Audio Article Status');
                     }
                 });
             });

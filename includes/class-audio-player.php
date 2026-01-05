@@ -145,6 +145,13 @@ class EchoAds_Audio_Player
         $postroll_tracking_endpoint = EchoAds_Settings::get_postroll_tracking_endpoint();
         $api_key = EchoAds_Settings::get_api_key();
         $bg_color = EchoAds_Settings::get_player_bg_color();
+        $endpoint = EchoAds_Settings::get_endpoint();
+        
+        // Construct status endpoint URL
+        $status_endpoint = '';
+        if (!empty($endpoint)) {
+            $status_endpoint = rtrim($endpoint, '/') . '/api/website-articles/' . $post_id . '/status';
+        }
 
         ob_start();
         ?>
@@ -253,6 +260,7 @@ class EchoAds_Audio_Player
                         prerollTrackingUrl: "<?php echo esc_js($preroll_tracking_endpoint); ?>",
                         postrollTrackingUrl: "<?php echo esc_js($postroll_tracking_endpoint); ?>",
                         apiKey: "<?php echo esc_js($api_key); ?>",
+                        statusEndpoint: "<?php echo esc_js($status_endpoint); ?>",
                         preRollAudioId: <?php echo isset($audio_data['preRollAudioId']) && $audio_data['preRollAudioId'] !== null ? json_encode($audio_data['preRollAudioId']) : 'null'; ?>,
                         postRollAudioId: <?php echo isset($audio_data['postRollAudioId']) && $audio_data['postRollAudioId'] !== null ? json_encode($audio_data['postRollAudioId']) : 'null'; ?>,
                         articleAudioId: <?php echo isset($audio_data['articleAudioId']) && $audio_data['articleAudioId'] !== null ? json_encode($audio_data['articleAudioId']) : 'null'; ?>
