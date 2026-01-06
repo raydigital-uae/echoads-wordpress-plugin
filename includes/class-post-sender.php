@@ -374,7 +374,7 @@ class EchoAds_Post_Sender {
         }
 
         // Construct status endpoint URL
-        $status_endpoint = rtrim( $endpoint, '/' ) . '/api/website-articles/' . $post_id . '/status';
+        $status_endpoint = rtrim( $endpoint, '/' ) . '/' . $post_id . '/status';
 
         $args = array(
             'headers' => array(
