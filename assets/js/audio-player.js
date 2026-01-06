@@ -29,6 +29,8 @@ window.EchoAdsAudioController = {
         var currentTrack = 0;
         var isPlaying = false;
         var isDragging = false;
+        var audioStatusChecked = false;
+        var audioStatus = null;
         var tracks = [
             { url: audioData.preRoll, name: "Pre-Roll Ad", trackingUrl: audioData.prerollTrackingUrl, campaignAudioId: audioData.preRollAudioId, allowSeeking: false },
             { url: audioData.article, name: "Article Audio", trackingUrl: null, campaignAudioId: audioData.articleAudioId, allowSeeking: true },
@@ -52,6 +54,73 @@ window.EchoAdsAudioController = {
             } else if (state === "Paused") {
                 playerContainer.classList.add('paused');
             }
+        }
+
+        function checkAudioStatus(callback) {
+            if (!audioData.statusEndpoint || !audioData.apiKey) {
+                // If no status endpoint configured, allow playback (backward compatibility)
+                if (callback) callback(true);
+                return;
+            }
+
+            if (audioStatusChecked && audioStatus === 'COMPLETED') {
+                // Already checked and confirmed completed
+                if (callback) callback(true);
+                return;
+            }
+
+            updatePlayerState("Checking status...");
+
+            if (typeof jQuery === "undefined") {
+                console.error("jQuery is required for status check");
+                updatePlayerState("Error");
+                if (callback) callback(false);
+                return;
+            }
+
+            jQuery.ajax({
+                url: audioData.statusEndpoint,
+                type: 'GET',
+                headers: {
+                    'x-api-key': audioData.apiKey
+                },
+                timeout: 10000,
+                success: function(response) {
+                    audioStatusChecked = true;
+                    
+                    // Parse response according to expected format
+                    var status = null;
+                    if (response.success && response.data && response.data.audioStatus) {
+                        status = response.data.audioStatus;
+                    } else if (response.audioStatus) {
+                        status = response.audioStatus;
+                    }
+
+                    audioStatus = status;
+
+                    if (status === 'COMPLETED') {
+                        updatePlayerState("Ready");
+                        if (callback) callback(true);
+                    } else {
+                        var statusMessage = status || 'Unknown';
+                        updatePlayerState("Status: " + statusMessage);
+                        if (status === 'PENDING' || status === 'PROCESSING') {
+                            updatePlayerState("Audio is being generated...");
+                        } else if (status === 'FAILED' || status === 'SKIPPED') {
+                            updatePlayerState("Audio generation " + status.toLowerCase());
+                        } else {
+                            updatePlayerState("Audio not ready");
+                        }
+                        if (callback) callback(false);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error checking audio status:", error);
+                    updatePlayerState("Status check failed");
+                    // On error, allow playback attempt (graceful degradation)
+                    if (callback) callback(true);
+                }
+            });
         }
         
         function loadTrack(index) {
@@ -219,9 +288,17 @@ window.EchoAdsAudioController = {
         // Control event listeners
         playPauseBtn.addEventListener("click", function() {
             if (audio.paused) {
-                audio.play().catch(function(error) {
-                    console.error("Play failed:", error);
-                    updatePlayerState("Error");
+                // Check status before playing
+                checkAudioStatus(function(canPlay) {
+                    if (canPlay) {
+                        audio.play().catch(function(error) {
+                            console.error("Play failed:", error);
+                            updatePlayerState("Error");
+                        });
+                    } else {
+                        // Status check failed or not completed
+                        updatePlayPauseButton(false);
+                    }
                 });
             } else {
                 audio.pause();
@@ -403,9 +480,16 @@ window.EchoAdsAudioController = {
             }
         });
         
-        // Initialize the first track
+        // Initialize: Check status first, then load track if ready
         if (tracks.length > 0) {
-            loadTrack(0);
+            checkAudioStatus(function(canPlay) {
+                if (canPlay) {
+                    loadTrack(0);
+                } else {
+                    // Status not completed, disable play button
+                    playPauseBtn.disabled = true;
+                }
+            });
         } else {
             updatePlayerState("No audio available");
             playPauseBtn.disabled = true;
