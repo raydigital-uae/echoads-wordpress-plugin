@@ -290,20 +290,39 @@ class EchoAds_Audio_Player
     public function enqueue_assets()
     {
         $plugin_url = plugin_dir_url(dirname(__FILE__));
+        $plugin_path = plugin_dir_path(dirname(__FILE__));
+
+        $css_version = $this->get_file_version($plugin_path . 'assets/css/audio-player.css');
+        $js_version = $this->get_file_version($plugin_path . 'assets/js/audio-player.js');
 
         wp_enqueue_style(
             'echoads-audio-player',
             $plugin_url . 'assets/css/audio-player.css',
             array(),
-            '1.0.0'
+            $css_version
         );
 
         wp_enqueue_script(
             'echoads-audio-player',
             $plugin_url . 'assets/js/audio-player.js',
             array('jquery'),
-            '1.0.0',
+            $js_version,
             true
         );
+    }
+
+    /**
+     * Get file modification time for cache busting.
+     * Falls back to '1.0.0' if file doesn't exist.
+     *
+     * @param string $file_path Absolute path to the file.
+     * @return string File modification timestamp or '1.0.0' as fallback.
+     */
+    private function get_file_version($file_path)
+    {
+        if (file_exists($file_path)) {
+            return filemtime($file_path);
+        }
+        return '1.0.0';
     }
 }
