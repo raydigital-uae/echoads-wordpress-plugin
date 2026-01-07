@@ -40,28 +40,17 @@ class EchoAds_Meta_Box {
             <?php if ( ! $has_config ) : ?>
                 <div class="echoads-notice echoads-notice-warning">
                     <p><strong>Configuration Required</strong></p>
-                    <p>Please configure API key and endpoint in <a href="<?php echo admin_url( 'options-general.php?page=auto-send-plugin' ); ?>" target="_blank">EchoAds Settings</a> before generating audio.</p>
+                    <p>Please configure API key and endpoint in <a href="<?php echo admin_url( 'options-general.php?page=auto-send-plugin' ); ?>" target="_blank">EchoAds Settings</a>. Audio will be generated automatically when you publish this post.</p>
                 </div>
-            <?php elseif ( ! $is_valid_status ) : ?>
-                <div class="echoads-notice echoads-notice-warning">
-                    <p><strong>Post Status Invalid</strong></p>
-                    <p>Audio can only be generated for posts with "Draft" or "Published" status. Please save your post as a draft or publish it first.</p>
-                </div>
-                <button type="button" id="echoads-generate-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" disabled>
-                    <span class="echoads-btn-icon">🎵</span>
-                    Generate Audio Article
-                </button>
             <?php elseif ( $audio_generated && $audio_status === 'COMPLETED' ) : ?>
                 <div class="echoads-notice echoads-notice-success">
                     <p><strong>Audio Generated</strong></p>
                     <p>Audio was generated on <?php echo date( 'M j, Y g:i A', strtotime( $audio_generated ) ); ?></p>
                     <p>The audio player will be displayed on the front-end for this post.</p>
                 </div>
-                <button type="button" id="echoads-preview-btn" class="button button-secondary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" onclick="window.open('<?php echo esc_js( $post_permalink ); ?>', '_blank');" style="width: 100%; margin-bottom: 8px;">
-                    Preview Post
-                </button>
-                <button type="button" id="echoads-regenerate-btn" class="button button-secondary" data-post-id="<?php echo esc_attr( $post->ID ); ?>">
-                    Regenerate Audio
+                <button type="button" id="echoads-preview-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="width: 100%;">
+                    <span class="echoads-btn-icon">🎧</span>
+                    Preview Audio Article Track
                 </button>
             <?php elseif ( $audio_requested ) : ?>
                 <?php if ( $audio_status === 'PENDING' || $audio_status === 'PROCESSING' ) : ?>
@@ -70,33 +59,29 @@ class EchoAds_Meta_Box {
                         <p>Status: <strong><?php echo esc_html( $audio_status ); ?></strong></p>
                         <p>Please check the status to see when audio generation is complete.</p>
                     </div>
+                    <button type="button" id="echoads-check-status-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="width: 100%;">
+                        Check Audio Article Status
+                    </button>
                 <?php elseif ( $audio_status === 'FAILED' || $audio_status === 'SKIPPED' ) : ?>
                     <div class="echoads-notice echoads-notice-error">
                         <p><strong>Audio Generation <?php echo esc_html( $audio_status ); ?></strong></p>
                         <p>Status: <strong><?php echo esc_html( $audio_status ); ?></strong></p>
-                        <p>You can try regenerating the audio.</p>
+                        <p>Audio generation failed. The post will attempt to generate audio again when republished.</p>
                     </div>
-                    <button type="button" id="echoads-regenerate-btn" class="button button-secondary" data-post-id="<?php echo esc_attr( $post->ID ); ?>">
-                        Regenerate Audio
-                    </button>
                 <?php else : ?>
                     <div class="echoads-notice echoads-notice-info">
                         <p><strong>Audio Generation Requested</strong></p>
                         <p>Audio generation was requested. Please check the status to see the current state.</p>
                     </div>
+                    <button type="button" id="echoads-check-status-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="width: 100%;">
+                        Check Audio Article Status
+                    </button>
                 <?php endif; ?>
-                <button type="button" id="echoads-check-status-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="width: 100%;">
-                    Check Audio Article Status
-                </button>
             <?php else : ?>
                 <div class="echoads-notice echoads-notice-info">
-                    <p><strong>Generate Audio Article</strong></p>
-                    <p>Click the button below to send this post data to the endpoint and generate audio content.</p>
+                    <p><strong>Audio Generation</strong></p>
+                    <p>Audio will be generated automatically when you publish this post.</p>
                 </div>
-                <button type="button" id="echoads-generate-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>">
-                    <span class="echoads-btn-icon">🎵</span>
-                    Generate Audio Article
-                </button>
             <?php endif; ?>
 
             <div id="echoads-response-message" style="display: none;"></div>
@@ -154,14 +139,14 @@ class EchoAds_Meta_Box {
             margin-bottom: 0;
         }
 
-        #echoads-generate-btn, #echoads-regenerate-btn, #echoads-check-status-btn, #echoads-preview-btn {
+        #echoads-check-status-btn, #echoads-preview-btn {
             width: 100%;
             padding: 8px 12px;
             font-size: 13px;
             margin-bottom: 12px;
         }
 
-        #echoads-generate-btn:disabled, #echoads-regenerate-btn:disabled, #echoads-check-status-btn:disabled {
+        #echoads-check-status-btn:disabled, #echoads-preview-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
         }
@@ -335,7 +320,7 @@ class EchoAds_Meta_Box {
                             // Reset button state after a short delay
                             setTimeout(function() {
                                 button.prop('disabled', false);
-                                button.html('<span class=\"echoads-btn-icon\">🎧</span> Preview Audio Article');
+                                button.html('<span class=\"echoads-btn-icon\">🎧</span> Preview Audio Article Track');
                             }, 1000);
                         } else {
                             responseDiv.addClass('error');
@@ -358,7 +343,7 @@ class EchoAds_Meta_Box {
                             
                             // Reset button state
                             button.prop('disabled', false);
-                            button.html('<span class=\"echoads-btn-icon\">🎧</span> Preview Audio Article');
+                            button.html('<span class=\"echoads-btn-icon\">🎧</span> Preview Audio Article Track');
                         }
                     },
                     error: function(xhr, status, error) {
@@ -399,122 +384,7 @@ class EchoAds_Meta_Box {
                         
                         // Reset button state
                         button.prop('disabled', false);
-                        button.html('<span class=\"echoads-btn-icon\">🎧</span> Preview Audio Article');
-                    }
-                });
-            });
-
-            $('#echoads-generate-btn, #echoads-regenerate-btn').click(function(e) {
-                e.preventDefault();
-
-                var button = $(this);
-                var postId = button.data('post-id');
-                var isRegenerate = button.attr('id') === 'echoads-regenerate-btn';
-                var responseDiv = $('#echoads-response-message');
-
-                // Check post status before proceeding (only for generate button, not regenerate)
-                if (!isRegenerate && typeof echoads_ajax !== 'undefined' && !echoads_ajax.is_valid_status) {
-                    responseDiv.removeClass('success').addClass('error');
-                    responseDiv.html('<strong>Post Status Invalid</strong><br>Audio can only be generated for posts with Draft or Published status. Please save your post as a draft or publish it first.').show();
-                    return;
-                }
-
-                // Update button state
-                button.prop('disabled', true);
-                if (isRegenerate) {
-                    button.text('Regenerating...');
-                } else {
-                    button.html('<span class=\"echoads-btn-icon\">⏳</span> Generating...');
-                }
-                responseDiv.hide().removeClass('success error').empty();
-
-                $.ajax({
-                    url: echoads_ajax.ajax_url,
-                    type: 'POST',
-                    data: {
-                        action: 'echoads_generate_audio',
-                        post_id: postId,
-                        regenerate: isRegenerate ? 'true' : 'false',
-                        nonce: echoads_ajax.nonce
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            responseDiv.addClass('success').text(response.data.message).show();
-                            // Don't reload immediately - show Check Status button instead
-                            setTimeout(function() {
-                                location.reload();
-                            }, 2000);
-                        } else {
-                            responseDiv.addClass('error');
-                            var errorHtml = formatErrorDetails(response.data || {});
-                            responseDiv.html(errorHtml).show();
-                            
-                            // Toggle details
-                            responseDiv.find('.echoads-toggle-details').click(function(e) {
-                                e.preventDefault();
-                                var detailsDiv = responseDiv.find('.echoads-error-details');
-                                var toggleLink = $(this);
-                                if (detailsDiv.is(':visible')) {
-                                    detailsDiv.slideUp();
-                                    toggleLink.text('Show Details');
-                                } else {
-                                    detailsDiv.slideDown();
-                                    toggleLink.text('Hide Details');
-                                }
-                            });
-                            
-                            // Reset button state
-                            button.prop('disabled', false);
-                            if (isRegenerate) {
-                                button.text('Regenerate Audio');
-                            } else {
-                                button.html('<span class=\"echoads-btn-icon\">🎵</span> Generate Audio Article');
-                            }
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        var errorData = {
-                            message: 'An error occurred: ' + error,
-                            error_message: error
-                        };
-                        
-                        // Try to parse response if available
-                        if (xhr.responseText) {
-                            try {
-                                var parsedResponse = JSON.parse(xhr.responseText);
-                                if (parsedResponse.data) {
-                                    errorData = $.extend(errorData, parsedResponse.data);
-                                }
-                            } catch(e) {
-                                errorData.response_body = xhr.responseText;
-                            }
-                        }
-                        
-                        responseDiv.addClass('error');
-                        var errorHtml = formatErrorDetails(errorData);
-                        responseDiv.html(errorHtml).show();
-                        
-                        // Toggle details
-                        responseDiv.find('.echoads-toggle-details').click(function(e) {
-                            e.preventDefault();
-                            var detailsDiv = responseDiv.find('.echoads-error-details');
-                            var toggleLink = $(this);
-                            if (detailsDiv.is(':visible')) {
-                                detailsDiv.slideUp();
-                                toggleLink.text('Show Details');
-                            } else {
-                                detailsDiv.slideDown();
-                                toggleLink.text('Hide Details');
-                            }
-                        });
-                        
-                        // Reset button state
-                        button.prop('disabled', false);
-                        if (isRegenerate) {
-                            button.text('Regenerate Audio');
-                        } else {
-                            button.html('<span class=\"echoads-btn-icon\">🎵</span> Generate Audio Article');
-                        }
+                        button.html('<span class=\"echoads-btn-icon\">🎧</span> Preview Audio Article Track');
                     }
                 });
             });
@@ -547,7 +417,7 @@ class EchoAds_Meta_Box {
                             
                             if (status === 'COMPLETED') {
                                 responseDiv.addClass('success').html('<strong>Audio Generation Complete!</strong><br>' + statusMessage).show();
-                                // Reload to show Preview and Regenerate buttons
+                                // Reload to show Preview button
                                 setTimeout(function() {
                                     location.reload();
                                 }, 1500);
@@ -556,8 +426,8 @@ class EchoAds_Meta_Box {
                                 button.prop('disabled', false);
                                 button.text('Check Audio Article Status');
                             } else if (status === 'FAILED' || status === 'SKIPPED') {
-                                responseDiv.addClass('error').html('<strong>Audio Generation ' + status + '</strong><br>' + statusMessage + '<br>You can try regenerating.').show();
-                                // Reload to show Regenerate button
+                                responseDiv.addClass('error').html('<strong>Audio Generation ' + status + '</strong><br>' + statusMessage + '<br>Audio generation failed. The post will attempt to generate audio again when republished.').show();
+                                // Reload to show updated status
                                 setTimeout(function() {
                                     location.reload();
                                 }, 1500);
