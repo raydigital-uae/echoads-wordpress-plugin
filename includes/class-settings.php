@@ -124,7 +124,7 @@ class EchoAds_Settings
                                            class="echoads-field-input"
                                            placeholder="example.com/api"
                                            autocomplete="url" />
-                                    <p class="echoads-field-description">The base URL for all API endpoints (e.g., example.com/api). All endpoint routes will be appended to this base URL.<br><strong>Note for Docker users:</strong> If WordPress is running in a Docker container and your backend is on the host machine, you can use <code>localhost</code> and it will be automatically converted to <code>host.docker.internal</code> to access the host machine. Alternatively, you can directly use <code>host.docker.internal</code> if preferred.</p>
+                                    <p class="echoads-field-description">The base URL for all API endpoints (e.g., example.com/api). All endpoint routes will be appended to this base URL.</p>
                                 </div>
 
                                 <div class="echoads-field-group">
@@ -273,7 +273,7 @@ class EchoAds_Settings
     {
         $value = trim($value);
         // Remove protocol if present
-        $value = preg_replace('#^http?://#', '', $value);
+        $value = preg_replace('#^https?://#', '', $value);
         // Remove trailing slash
         $value = rtrim($value, '/');
         return $value;
@@ -371,8 +371,8 @@ class EchoAds_Settings
                 
                 // Ensure base URL has protocol
                 var baseUrlWithProtocol = baseUrl;
-                if (!baseUrl.match(/^http?:\/\//)) {
-                    baseUrlWithProtocol = 'http://' + baseUrl;
+                if (!baseUrl.match(/^https?:\/\//)) {
+                    baseUrlWithProtocol = 'https://' + baseUrl;
                 }
                 
                 var healthCheckUrl = baseUrlWithProtocol + '/website-articles/health-check';
@@ -424,15 +424,11 @@ class EchoAds_Settings
             return '';
         }
         // Remove protocol if present
-        $base_url = preg_replace('#^http?://#', '', $base_url);
+        $base_url = preg_replace('#^https?://#', '', $base_url);
         // Remove trailing slash
         $base_url = rtrim($base_url, '/');
-        // Replace localhost with host.docker.internal for Docker container access to host machine
-        if (strpos($base_url, 'localhost') === 0) {
-            $base_url = preg_replace('#^localhost#', 'host.docker.internal', $base_url);
-        }
-        // Add http protocol
-        return 'http://' . $base_url;
+        // Add https protocol
+        return 'https://' . $base_url;
     }
 
     public static function get_base_url()
