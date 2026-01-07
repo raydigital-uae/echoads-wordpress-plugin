@@ -3,25 +3,30 @@ window.EchoAdsAudioController = {
         var audioData = window.EchoAdsAudioPlayers[playerId];
         if (!audioData) return;
         
-        // Get all elements
+        // Get wrapper and listen button container elements
+        var listenBtnContainer = document.getElementById(playerId + "-listen-btn-container");
+        var playerContainer = document.getElementById(playerId);
+        
+        // Get all player elements
         var audio = document.getElementById(playerId + "-audio");
         var playPauseBtn = document.getElementById(playerId + "-play-pause");
-        var previousBtn = document.getElementById(playerId + "-previous");
-        var nextBtn = document.getElementById(playerId + "-next");
-        var progressBar = document.getElementById(playerId + "-progress");
-        var progressFill = document.getElementById(playerId + "-fill");
-        var progressHandle = document.getElementById(playerId + "-handle");
+        var waveform = document.getElementById(playerId + "-progress");
         var currentTimeSpan = document.getElementById(playerId + "-current-time");
         var durationSpan = document.getElementById(playerId + "-duration");
         var trackDisplay = document.getElementById(playerId + "-track");
         var statusDisplay = document.getElementById(playerId + "-status");
+        var volumeControl = document.getElementById(playerId + "-volume-control");
         var volumeBtn = document.getElementById(playerId + "-volume-btn");
         var volumeInput = document.getElementById(playerId + "-volume-input");
+        var volumeFill = document.getElementById(playerId + "-volume-fill");
+        var volumeSliderWrapper = volumeControl ? volumeControl.querySelector(".echoads-volume-slider-wrapper") : null;
         var playIcon = playPauseBtn.querySelector(".play-icon");
         var pauseIcon = playPauseBtn.querySelector(".pause-icon");
-        var playerContainer = document.getElementById(playerId);
+        var volumeIcon = volumeBtn.querySelector(".volume-icon");
+        var volumeMutedIcon = volumeBtn.querySelector(".volume-muted-icon");
+        var waveformBars = waveform.querySelectorAll(".echoads-bar");
         
-        if (!audio || !playPauseBtn || !progressBar) {
+        if (!audio || !playPauseBtn || !waveform) {
             console.error("Audio player elements not found for", playerId);
             return;
         }
@@ -31,15 +36,66 @@ window.EchoAdsAudioController = {
         var isDragging = false;
         var audioStatusChecked = false;
         var audioStatus = null;
+        var isMuted = false;
+        var lastVolume = 80;
+        var isPlayerVisible = false;
+        var isVolumePopupOpen = false;
+        
         var tracks = [
             { url: audioData.preRoll, name: "Pre-Roll Ad", trackingUrl: audioData.prerollTrackingUrl, campaignAudioId: audioData.preRollAudioId, allowSeeking: false },
             { url: audioData.article, name: "Article Audio", trackingUrl: null, campaignAudioId: audioData.articleAudioId, allowSeeking: true },
             { url: audioData.postRoll, name: "Post-Roll Ad", trackingUrl: audioData.postrollTrackingUrl, campaignAudioId: audioData.postRollAudioId, allowSeeking: false }
-        ].filter(track => track.url); // Filter out empty URLs
+        ].filter(track => track.url);
         
         // Initialize volume
         if (volumeInput) {
             audio.volume = volumeInput.value / 100;
+            lastVolume = volumeInput.value;
+            updateVolumeFill(volumeInput.value);
+        }
+        
+        // Show player and hide listen button container
+        function showPlayer() {
+            if (listenBtnContainer) {
+                listenBtnContainer.classList.add('echoads-hidden');
+            }
+            if (playerContainer) {
+                playerContainer.classList.remove('echoads-hidden');
+            }
+            isPlayerVisible = true;
+        }
+        
+        // Listen button container click handler
+        if (listenBtnContainer) {
+            listenBtnContainer.addEventListener("click", function() {
+                showPlayer();
+                
+                // Check status and start playing
+                checkAudioStatus(function(canPlay) {
+                    if (canPlay) {
+                        if (tracks.length > 0 && !audio.src) {
+                            loadTrack(0);
+                        }
+                        // Small delay to ensure track is loaded
+                        setTimeout(function() {
+                            audio.play().catch(function(error) {
+                                console.error("Play failed:", error);
+                                updatePlayerState("Error");
+                            });
+                        }, 100);
+                    } else {
+                        updatePlayPauseButton(false);
+                    }
+                });
+            });
+            
+            // Keyboard support for listen button container
+            listenBtnContainer.addEventListener("keydown", function(e) {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    listenBtnContainer.click();
+                }
+            });
         }
         
         function updatePlayerState(state) {
@@ -47,6 +103,10 @@ window.EchoAdsAudioController = {
                 statusDisplay.textContent = state;
             }
             playerContainer.className = playerContainer.className.replace(/\s*(loading|playing|paused)/g, '');
+            // Preserve hidden class if player is not visible
+            if (!isPlayerVisible) {
+                playerContainer.classList.add('echoads-hidden');
+            }
             if (state === "Loading...") {
                 playerContainer.classList.add('loading');
             } else if (state === "Playing") {
@@ -58,13 +118,11 @@ window.EchoAdsAudioController = {
 
         function checkAudioStatus(callback) {
             if (!audioData.statusEndpoint || !audioData.apiKey) {
-                // If no status endpoint configured, allow playback (backward compatibility)
                 if (callback) callback(true);
                 return;
             }
 
             if (audioStatusChecked && audioStatus === 'COMPLETED') {
-                // Already checked and confirmed completed
                 if (callback) callback(true);
                 return;
             }
@@ -88,7 +146,6 @@ window.EchoAdsAudioController = {
                 success: function(response) {
                     audioStatusChecked = true;
                     
-                    // Parse response according to expected format
                     var status = null;
                     if (response.success && response.data && response.data.audioStatus) {
                         status = response.data.audioStatus;
@@ -117,7 +174,6 @@ window.EchoAdsAudioController = {
                 error: function(xhr, status, error) {
                     console.error("Error checking audio status:", error);
                     updatePlayerState("Status check failed");
-                    // On error, allow playback attempt (graceful degradation)
                     if (callback) callback(true);
                 }
             });
@@ -128,21 +184,13 @@ window.EchoAdsAudioController = {
             
             currentTrack = index;
             updatePlayerState("Loading...");
-            updateProgressBarState();
+            updateWaveformState();
             
             audio.src = tracks[index].url;
-            trackDisplay.textContent = tracks[index].name;
+            if (trackDisplay) {
+                trackDisplay.textContent = tracks[index].name;
+            }
             audio.load();
-            
-            // Update navigation buttons
-            if (previousBtn) {
-                previousBtn.disabled = currentTrack === 0;
-                previousBtn.style.opacity = currentTrack === 0 ? '0.5' : '1';
-            }
-            if (nextBtn) {
-                nextBtn.disabled = currentTrack === tracks.length - 1;
-                nextBtn.style.opacity = currentTrack === tracks.length - 1 ? '0.5' : '1';
-            }
         }
         
         function callTrackingEndpoint(url, apiKey, campaignAudioId) {
@@ -190,10 +238,50 @@ window.EchoAdsAudioController = {
                 if (playing) {
                     playIcon.style.display = "none";
                     pauseIcon.style.display = "block";
+                    playPauseBtn.setAttribute("aria-label", "Pause");
                 } else {
                     playIcon.style.display = "block";
                     pauseIcon.style.display = "none";
+                    playPauseBtn.setAttribute("aria-label", "Play");
                 }
+            }
+        }
+        
+        function updateVolumeIcon() {
+            if (volumeIcon && volumeMutedIcon) {
+                if (isMuted || audio.volume === 0) {
+                    volumeIcon.style.display = "none";
+                    volumeMutedIcon.style.display = "block";
+                } else {
+                    volumeIcon.style.display = "block";
+                    volumeMutedIcon.style.display = "none";
+                }
+            }
+        }
+        
+        function updateVolumeFill(value) {
+            if (volumeFill) {
+                volumeFill.style.height = value + '%';
+            }
+            // Update the thumb position via CSS custom property
+            if (volumeSliderWrapper) {
+                volumeSliderWrapper.style.setProperty('--volume-percent', value + '%');
+            }
+        }
+        
+        function toggleVolumePopup() {
+            if (volumeControl) {
+                isVolumePopupOpen = !isVolumePopupOpen;
+                volumeControl.classList.toggle('active', isVolumePopupOpen);
+                volumeBtn.setAttribute('aria-expanded', isVolumePopupOpen ? 'true' : 'false');
+            }
+        }
+        
+        function closeVolumePopup() {
+            if (volumeControl && isVolumePopupOpen) {
+                isVolumePopupOpen = false;
+                volumeControl.classList.remove('active');
+                volumeBtn.setAttribute('aria-expanded', 'false');
             }
         }
         
@@ -201,35 +289,47 @@ window.EchoAdsAudioController = {
             return tracks[currentTrack] && tracks[currentTrack].allowSeeking;
         }
         
-        function updateProgressBarState() {
+        function updateWaveformState() {
             var seekingAllowed = isSeekingAllowed();
-            if (progressBar) {
-                progressBar.style.cursor = seekingAllowed ? 'pointer' : 'default';
-                progressBar.style.opacity = seekingAllowed ? '1' : '0.7';
-                progressBar.setAttribute('data-seeking-disabled', seekingAllowed ? 'false' : 'true');
+            if (waveform) {
+                waveform.style.cursor = seekingAllowed ? 'pointer' : 'default';
+                waveform.setAttribute('data-seeking-disabled', seekingAllowed ? 'false' : 'true');
             }
         }
         
-        function updateProgress() {
+        function updateWaveformProgress() {
             if (isDragging) return;
             
             var progress = (audio.currentTime / audio.duration) * 100;
             if (isNaN(progress)) progress = 0;
             
-            progressFill.style.width = progress + "%";
-            if (progressHandle) {
-                progressHandle.style.right = (100 - progress) + "%";
-            }
+            // Update waveform bars based on progress
+            var totalBars = waveformBars.length;
+            var activeBars = Math.floor((progress / 100) * totalBars);
+            
+            waveformBars.forEach(function(bar, index) {
+                if (index < activeBars) {
+                    bar.classList.add('active');
+                } else {
+                    bar.classList.remove('active');
+                }
+            });
+            
+            // Update ARIA value
+            waveform.setAttribute('aria-valuenow', Math.round(progress));
+            
             currentTimeSpan.textContent = formatTime(audio.currentTime);
         }
         
         // Audio event listeners
         audio.addEventListener("loadedmetadata", function() {
-            durationSpan.textContent = formatTime(audio.duration);
+            if (durationSpan) {
+                durationSpan.textContent = formatTime(audio.duration);
+            }
             updatePlayerState("Ready");
         });
         
-        audio.addEventListener("timeupdate", updateProgress);
+        audio.addEventListener("timeupdate", updateWaveformProgress);
         
         audio.addEventListener("ended", function() {
             if (currentTrack < tracks.length - 1) {
@@ -244,10 +344,9 @@ window.EchoAdsAudioController = {
             } else {
                 updatePlayPauseButton(false);
                 updatePlayerState("Finished");
-                progressFill.style.width = "0%";
-                if (progressHandle) {
-                    progressHandle.style.right = "100%";
-                }
+                waveformBars.forEach(function(bar) {
+                    bar.classList.remove('active');
+                });
                 currentTimeSpan.textContent = "0:00";
                 isPlaying = false;
             }
@@ -285,10 +384,9 @@ window.EchoAdsAudioController = {
             console.error("Audio error:", audio.error);
         });
         
-        // Control event listeners
+        // Play/Pause button
         playPauseBtn.addEventListener("click", function() {
             if (audio.paused) {
-                // Check status before playing
                 checkAudioStatus(function(canPlay) {
                     if (canPlay) {
                         audio.play().catch(function(error) {
@@ -296,7 +394,6 @@ window.EchoAdsAudioController = {
                             updatePlayerState("Error");
                         });
                     } else {
-                        // Status check failed or not completed
                         updatePlayPauseButton(false);
                     }
                 });
@@ -305,27 +402,11 @@ window.EchoAdsAudioController = {
             }
         });
         
-        if (previousBtn) {
-            previousBtn.addEventListener("click", function() {
-                if (currentTrack > 0) {
-                    loadTrack(currentTrack - 1);
-                }
-            });
-        }
-        
-        if (nextBtn) {
-            nextBtn.addEventListener("click", function() {
-                if (currentTrack < tracks.length - 1) {
-                    loadTrack(currentTrack + 1);
-                }
-            });
-        }
-        
-        // Progress bar interaction
-        function handleProgressClick(e) {
+        // Waveform click for seeking
+        function handleWaveformClick(e) {
             if (!isSeekingAllowed()) return;
             
-            var rect = progressBar.getBoundingClientRect();
+            var rect = waveform.getBoundingClientRect();
             var clickX = e.clientX - rect.left;
             var width = rect.width;
             var clickPercent = Math.max(0, Math.min(1, clickX / width));
@@ -335,27 +416,32 @@ window.EchoAdsAudioController = {
             }
         }
         
-        progressBar.addEventListener("click", handleProgressClick);
+        waveform.addEventListener("click", handleWaveformClick);
         
-        // Progress bar dragging
-        progressBar.addEventListener("mousedown", function(e) {
+        // Waveform dragging
+        waveform.addEventListener("mousedown", function(e) {
             if (!isSeekingAllowed()) return;
             isDragging = true;
-            handleProgressClick(e);
+            handleWaveformClick(e);
         });
         
         document.addEventListener("mousemove", function(e) {
             if (isDragging && isSeekingAllowed()) {
-                var rect = progressBar.getBoundingClientRect();
+                var rect = waveform.getBoundingClientRect();
                 var clickX = e.clientX - rect.left;
                 var width = rect.width;
                 var clickPercent = Math.max(0, Math.min(1, clickX / width));
                 
-                var progress = clickPercent * 100;
-                progressFill.style.width = progress + "%";
-                if (progressHandle) {
-                    progressHandle.style.right = (100 - progress) + "%";
-                }
+                var totalBars = waveformBars.length;
+                var activeBars = Math.floor(clickPercent * totalBars);
+                
+                waveformBars.forEach(function(bar, index) {
+                    if (index < activeBars) {
+                        bar.classList.add('active');
+                    } else {
+                        bar.classList.remove('active');
+                    }
+                });
                 
                 if (audio.duration) {
                     currentTimeSpan.textContent = formatTime(clickPercent * audio.duration);
@@ -367,7 +453,7 @@ window.EchoAdsAudioController = {
             if (isDragging) {
                 isDragging = false;
                 if (isSeekingAllowed()) {
-                    var rect = progressBar.getBoundingClientRect();
+                    var rect = waveform.getBoundingClientRect();
                     var clickX = e.clientX - rect.left;
                     var width = rect.width;
                     var clickPercent = Math.max(0, Math.min(1, clickX / width));
@@ -379,14 +465,41 @@ window.EchoAdsAudioController = {
             }
         });
         
-        // Volume control
-        if (volumeInput) {
-            volumeInput.addEventListener("input", function() {
-                audio.volume = volumeInput.value / 100;
+        // Volume button - toggle popup
+        if (volumeBtn) {
+            volumeBtn.addEventListener("click", function(e) {
+                e.stopPropagation();
+                toggleVolumePopup();
             });
         }
         
-        // Keyboard support
+        // Close volume popup when clicking outside
+        document.addEventListener("click", function(e) {
+            if (volumeControl && !volumeControl.contains(e.target)) {
+                closeVolumePopup();
+            }
+        });
+        
+        // Volume slider
+        if (volumeInput) {
+            volumeInput.addEventListener("input", function() {
+                var value = volumeInput.value;
+                audio.volume = value / 100;
+                isMuted = value == 0;
+                if (!isMuted) {
+                    lastVolume = value;
+                }
+                updateVolumeIcon();
+                updateVolumeFill(value);
+            });
+            
+            // Prevent popup from closing when interacting with slider
+            volumeInput.addEventListener("click", function(e) {
+                e.stopPropagation();
+            });
+        }
+        
+        // Keyboard support for player
         playerContainer.addEventListener("keydown", function(e) {
             switch(e.key) {
                 case " ":
@@ -409,31 +522,62 @@ window.EchoAdsAudioController = {
                 case "ArrowUp":
                     e.preventDefault();
                     if (volumeInput) {
-                        volumeInput.value = Math.min(100, parseInt(volumeInput.value) + 10);
-                        audio.volume = volumeInput.value / 100;
+                        var newVal = Math.min(100, parseInt(volumeInput.value) + 10);
+                        volumeInput.value = newVal;
+                        audio.volume = newVal / 100;
+                        isMuted = false;
+                        lastVolume = newVal;
+                        updateVolumeIcon();
+                        updateVolumeFill(newVal);
                     }
                     break;
                 case "ArrowDown":
                     e.preventDefault();
                     if (volumeInput) {
-                        volumeInput.value = Math.max(0, parseInt(volumeInput.value) - 10);
-                        audio.volume = volumeInput.value / 100;
+                        var newVal = Math.max(0, parseInt(volumeInput.value) - 10);
+                        volumeInput.value = newVal;
+                        audio.volume = newVal / 100;
+                        isMuted = newVal == 0;
+                        updateVolumeIcon();
+                        updateVolumeFill(newVal);
                     }
+                    break;
+                case "m":
+                case "M":
+                    e.preventDefault();
+                    // Toggle mute
+                    if (isMuted) {
+                        isMuted = false;
+                        audio.volume = lastVolume / 100;
+                        if (volumeInput) {
+                            volumeInput.value = lastVolume;
+                            updateVolumeFill(lastVolume);
+                        }
+                    } else {
+                        isMuted = true;
+                        lastVolume = volumeInput ? volumeInput.value : audio.volume * 100;
+                        audio.volume = 0;
+                        if (volumeInput) {
+                            volumeInput.value = 0;
+                            updateVolumeFill(0);
+                        }
+                    }
+                    updateVolumeIcon();
+                    break;
+                case "Escape":
+                    closeVolumePopup();
                     break;
             }
         });
         
-        // Make player focusable for keyboard navigation
-        playerContainer.setAttribute("tabindex", "0");
-        
         // Touch support for mobile
         var touchStartX = 0;
-        progressBar.addEventListener("touchstart", function(e) {
+        waveform.addEventListener("touchstart", function(e) {
             if (!isSeekingAllowed()) return;
             e.preventDefault();
             isDragging = true;
             touchStartX = e.touches[0].clientX;
-            var rect = progressBar.getBoundingClientRect();
+            var rect = waveform.getBoundingClientRect();
             var clickX = touchStartX - rect.left;
             var width = rect.width;
             var clickPercent = Math.max(0, Math.min(1, clickX / width));
@@ -443,19 +587,24 @@ window.EchoAdsAudioController = {
             }
         });
         
-        progressBar.addEventListener("touchmove", function(e) {
+        waveform.addEventListener("touchmove", function(e) {
             if (isDragging && isSeekingAllowed()) {
                 e.preventDefault();
-                var rect = progressBar.getBoundingClientRect();
+                var rect = waveform.getBoundingClientRect();
                 var clickX = e.touches[0].clientX - rect.left;
                 var width = rect.width;
                 var clickPercent = Math.max(0, Math.min(1, clickX / width));
                 
-                var progress = clickPercent * 100;
-                progressFill.style.width = progress + "%";
-                if (progressHandle) {
-                    progressHandle.style.right = (100 - progress) + "%";
-                }
+                var totalBars = waveformBars.length;
+                var activeBars = Math.floor(clickPercent * totalBars);
+                
+                waveformBars.forEach(function(bar, index) {
+                    if (index < activeBars) {
+                        bar.classList.add('active');
+                    } else {
+                        bar.classList.remove('active');
+                    }
+                });
                 
                 if (audio.duration) {
                     currentTimeSpan.textContent = formatTime(clickPercent * audio.duration);
@@ -463,12 +612,12 @@ window.EchoAdsAudioController = {
             }
         });
         
-        progressBar.addEventListener("touchend", function(e) {
+        waveform.addEventListener("touchend", function(e) {
             if (isDragging) {
                 e.preventDefault();
                 isDragging = false;
                 if (isSeekingAllowed()) {
-                    var rect = progressBar.getBoundingClientRect();
+                    var rect = waveform.getBoundingClientRect();
                     var clickX = touchStartX - rect.left;
                     var width = rect.width;
                     var clickPercent = Math.max(0, Math.min(1, clickX / width));
@@ -480,19 +629,18 @@ window.EchoAdsAudioController = {
             }
         });
         
-        // Initialize: Check status first, then load track if ready
-        if (tracks.length > 0) {
-            checkAudioStatus(function(canPlay) {
-                if (canPlay) {
-                    loadTrack(0);
-                } else {
-                    // Status not completed, disable play button
-                    playPauseBtn.disabled = true;
-                }
-            });
-        } else {
-            updatePlayerState("No audio available");
-            playPauseBtn.disabled = true;
+        // Initialize volume icon and fill
+        updateVolumeIcon();
+        updateVolumeFill(lastVolume);
+        
+        // Don't auto-load tracks - wait for listen button click
+        // Only disable if no tracks available
+        if (tracks.length === 0) {
+            if (listenBtnContainer) {
+                listenBtnContainer.style.opacity = '0.5';
+                listenBtnContainer.style.cursor = 'not-allowed';
+                listenBtnContainer.style.pointerEvents = 'none';
+            }
         }
     }
 };
