@@ -170,14 +170,14 @@ class EchoAds_Settings
                                             name="<?php echo esc_attr(self::OPTION_PLAYER_POSITION); ?>"
                                             class="echoads-field-input">
                                         <option value="above" <?php selected(get_option(self::OPTION_PLAYER_POSITION, 'below'), 'above'); ?>>
-                                            Above Content
+                                            Above Article
                                         </option>
                                         <option value="below" <?php selected(get_option(self::OPTION_PLAYER_POSITION, 'below'), 'below'); ?>>
-                                            Below Content
+                                            Below Article
                                         </option>
                                     </select>
                                     <p class="echoads-field-description">Choose where to display the audio player in relation to your
-                                        post content. Default: Below Content</p>
+                                        post content. Default: Below Article</p>
                                 </div>
                             </div>
 
