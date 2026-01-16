@@ -120,6 +120,7 @@
     height: 36px;
     background: transparent;
     border: none;
+    border-radius: 100px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -134,8 +135,7 @@
 }
 
 .echoads-play-pause-btn:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.8);
-    outline-offset: 2px;
+    outline: none;
 }
 
 .echoads-play-pause-btn svg {
@@ -252,6 +252,7 @@
     border-radius: 50%;
     background: transparent;
     border: none;
+    border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -261,14 +262,8 @@
     outline: none;
 }
 
-.echoads-volume-btn:hover {
-    color: white;
-    background: rgba(255, 255, 255, 0.15);
-}
-
 .echoads-volume-btn:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.8);
-    outline-offset: 2px;
+    outline: none;
 }
 
 .echoads-volume-btn svg {

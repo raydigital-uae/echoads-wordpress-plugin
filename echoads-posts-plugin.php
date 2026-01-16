@@ -6,14 +6,15 @@ Version: 1.0.0
 Author: Hussein Shaltout 
 */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once plugin_dir_path( __FILE__ ) . 'includes/class-plugin.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-plugin.php';
 
-function echoads_plugin_init() {
+function echoads_plugin_init()
+{
     EchoAds_Plugin::get_instance();
 }
-add_action( 'init', 'echoads_plugin_init' );
+add_action('init', 'echoads_plugin_init');
 ?>

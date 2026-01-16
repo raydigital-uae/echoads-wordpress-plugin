@@ -11,6 +11,7 @@ class EchoAds_Settings
     const OPTION_BASE_URL = 'auto_send_plugin_base_url';
     const OPTION_TIMEOUT = 'auto_send_plugin_timeout';
     const OPTION_PLAYER_BG_COLOR = 'auto_send_plugin_player_bg_color';
+    const OPTION_PLAYER_POSITION = 'auto_send_plugin_player_position';
 
     public function __construct()
     {
@@ -147,7 +148,7 @@ class EchoAds_Settings
 
                             <div class="echoads-form-section">
                                 <h2>Audio Configuration</h2>
-                                <p>Configure audio player appearance settings.</p>
+                                <p>Configure audio player appearance and placement settings.</p>
 
                                 <div class="echoads-field-group">
                                     <label class="echoads-field-label"
@@ -160,6 +161,23 @@ class EchoAds_Settings
                                            class="echoads-color-picker" />
                                     <p class="echoads-field-description">Choose a background color for the audio player. Default:
                                         #5D33F5</p>
+                                </div>
+
+                                <div class="echoads-field-group">
+                                    <label class="echoads-field-label"
+                                           for="<?php echo esc_attr(self::OPTION_PLAYER_POSITION); ?>">Player Position</label>
+                                    <select id="<?php echo esc_attr(self::OPTION_PLAYER_POSITION); ?>"
+                                            name="<?php echo esc_attr(self::OPTION_PLAYER_POSITION); ?>"
+                                            class="echoads-field-input">
+                                        <option value="above" <?php selected(get_option(self::OPTION_PLAYER_POSITION, 'below'), 'above'); ?>>
+                                            Above Content
+                                        </option>
+                                        <option value="below" <?php selected(get_option(self::OPTION_PLAYER_POSITION, 'below'), 'below'); ?>>
+                                            Below Content
+                                        </option>
+                                    </select>
+                                    <p class="echoads-field-description">Choose where to display the audio player in relation to your
+                                        post content. Default: Below Content</p>
                                 </div>
                             </div>
 
@@ -267,6 +285,11 @@ class EchoAds_Settings
             'sanitize_callback' => array($this, 'sanitize_color'),
             'default' => '#5D33F5'
         ));
+        register_setting('auto_send_plugin_settings', self::OPTION_PLAYER_POSITION, array(
+            'type' => 'string',
+            'sanitize_callback' => array($this, 'sanitize_position'),
+            'default' => 'below'
+        ));
     }
 
     public function sanitize_base_url($value)
@@ -303,6 +326,19 @@ class EchoAds_Settings
         
         // Return default color if invalid
         return '#5D33F5';
+    }
+
+    public function sanitize_position($value)
+    {
+        // Only allow 'above' or 'below'
+        $allowed_positions = array('above', 'below');
+        
+        if (in_array($value, $allowed_positions, true)) {
+            return $value;
+        }
+        
+        // Return default position if invalid
+        return 'below';
     }
 
 
@@ -488,5 +524,10 @@ class EchoAds_Settings
     public static function get_player_bg_color()
     {
         return get_option(self::OPTION_PLAYER_BG_COLOR, '#5D33F5');
+    }
+
+    public static function get_player_position()
+    {
+        return get_option(self::OPTION_PLAYER_POSITION, 'below');
     }
 }
