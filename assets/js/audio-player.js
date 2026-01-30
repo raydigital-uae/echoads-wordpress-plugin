@@ -644,3 +644,16 @@ window.EchoAdsAudioController = {
         }
     }
 };
+
+// Process any players that were registered before this script loaded (avoids race condition)
+(function() {
+    var pending = window.EchoAdsAudioPlayersPendingInit;
+    if (pending && pending.length) {
+        window.EchoAdsAudioPlayersPendingInit = [];
+        pending.forEach(function(playerId) {
+            if (window.EchoAdsAudioController && window.EchoAdsAudioPlayers[playerId]) {
+                window.EchoAdsAudioController.init(playerId);
+            }
+        });
+    }
+})();

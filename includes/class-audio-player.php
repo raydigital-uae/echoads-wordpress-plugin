@@ -153,10 +153,10 @@ class EchoAds_Audio_Player
         $bg_color = EchoAds_Settings::get_player_bg_color();
         $endpoint = EchoAds_Settings::get_endpoint();
 
-        // Construct status endpoint URL
+        // Construct status endpoint URL (endpoint already includes base path e.g. .../website-articles)
         $status_endpoint = '';
         if (!empty($endpoint)) {
-            $status_endpoint = rtrim($endpoint, '/') . '/api/website-articles/' . $post_id . '/status';
+            $status_endpoint = rtrim($endpoint, '/') . '/' . $post_id . '/status';
         }
 
         ob_start();
@@ -366,13 +366,14 @@ class EchoAds_Audio_Player
 
                 window.EchoAdsAudioPlayers[playerId] = audioData;
 
-                setTimeout(function () {
-                    if (typeof window.EchoAdsAudioController !== "undefined") {
-                        window.EchoAdsAudioController.init(playerId);
-                    } else {
-                        console.error("EchoAdsAudioController not available");
-                    }
-                }, 100);
+                if (typeof window.EchoAdsAudioPlayersPendingInit === "undefined") {
+                    window.EchoAdsAudioPlayersPendingInit = [];
+                }
+                window.EchoAdsAudioPlayersPendingInit.push(playerId);
+
+                if (typeof window.EchoAdsAudioController !== "undefined") {
+                    window.EchoAdsAudioController.init(playerId);
+                }
             })();
         </script>
         <?php
