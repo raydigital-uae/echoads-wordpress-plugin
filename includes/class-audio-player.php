@@ -416,6 +416,6 @@ class EchoAds_Audio_Player
         if (file_exists($file_path)) {
             return filemtime($file_path);
         }
-        return '1.0.0';
+        return '1.0.1';
     }
 }
