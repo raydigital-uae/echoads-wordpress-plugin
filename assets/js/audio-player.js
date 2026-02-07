@@ -72,6 +72,7 @@ window.EchoAdsAudioController = {
         var isPlayerVisible = false;
         var isVolumePopupOpen = false;
         var fiveSecondTrackingSent = false;
+        var trackingSentThisPage = {};
         
         var tracks = [
             { url: audioData.preRoll, name: "Pre-Roll Ad", trackingUrl: audioData.prerollTrackingUrl, campaignAudioId: audioData.preRollAudioId, allowSeeking: false },
@@ -260,6 +261,9 @@ window.EchoAdsAudioController = {
 
         function sendTrackingOnce(track, playPositionSeconds) {
             if (!track || !track.trackingUrl) return;
+            var key = (track.campaignAudioId != null && track.campaignAudioId !== '') ? String(track.campaignAudioId) : ('track-' + currentTrack);
+            if (trackingSentThisPage[key]) return;
+            trackingSentThisPage[key] = true;
             visitorIdPromise.then(function(visitorId) {
                 callTrackingEndpoint({
                     url: track.trackingUrl,
