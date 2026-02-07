@@ -2,7 +2,29 @@ window.EchoAdsAudioController = {
     init: function(playerId) {
         var audioData = window.EchoAdsAudioPlayers[playerId];
         if (!audioData) return;
-        
+        var i18n = window.echoads_i18n || {};
+        var isRtl = !!(i18n.isRtl);
+        var fallbacks = {
+            loading: "Loading...", playing: "Playing", paused: "Paused", error: "Error", ready: "Ready",
+            checking_status: "Checking status...", audio_being_generated: "Audio is being generated...",
+            status_check_failed: "Status check failed", buffering: "Buffering...", finished: "Finished",
+            play: "Play", pause: "Pause", pre_roll_ad: "Pre-Roll Ad", article_audio: "Article Audio",
+            post_roll_ad: "Post-Roll Ad", status_label: "Status:", audio_not_ready: "Audio not ready",
+            audio_generation: "Audio generation"
+        };
+        function t(key) { return i18n[key] !== undefined && i18n[key] !== "" ? i18n[key] : (fallbacks[key] || key); }
+        function getClickPercent(clientX, rect) {
+            var clickX = clientX - rect.left;
+            var width = rect.width;
+            var pct = Math.max(0, Math.min(1, clickX / width));
+            return isRtl ? 1 - pct : pct;
+        }
+        function getClickPercentFromTouch(touch, rect) {
+            var clickX = touch.clientX - rect.left;
+            var width = rect.width;
+            var pct = Math.max(0, Math.min(1, clickX / width));
+            return isRtl ? 1 - pct : pct;
+        }
         // Get wrapper and listen button container elements
         var listenBtnContainer = document.getElementById(playerId + "-listen-btn-container");
         var playerContainer = document.getElementById(playerId);
@@ -42,10 +64,10 @@ window.EchoAdsAudioController = {
         var isVolumePopupOpen = false;
         
         var tracks = [
-            { url: audioData.preRoll, name: "Pre-Roll Ad", trackingUrl: audioData.prerollTrackingUrl, campaignAudioId: audioData.preRollAudioId, allowSeeking: false },
-            { url: audioData.article, name: "Article Audio", trackingUrl: null, campaignAudioId: audioData.articleAudioId, allowSeeking: true },
-            { url: audioData.postRoll, name: "Post-Roll Ad", trackingUrl: audioData.postrollTrackingUrl, campaignAudioId: audioData.postRollAudioId, allowSeeking: false }
-        ].filter(track => track.url);
+            { url: audioData.preRoll, name: t("pre_roll_ad"), trackingUrl: audioData.prerollTrackingUrl, campaignAudioId: audioData.preRollAudioId, allowSeeking: false },
+            { url: audioData.article, name: t("article_audio"), trackingUrl: null, campaignAudioId: audioData.articleAudioId, allowSeeking: true },
+            { url: audioData.postRoll, name: t("post_roll_ad"), trackingUrl: audioData.postrollTrackingUrl, campaignAudioId: audioData.postRollAudioId, allowSeeking: false }
+        ].filter(function(track) { return track.url; });
         
         // Initialize volume
         if (volumeInput) {
@@ -80,7 +102,7 @@ window.EchoAdsAudioController = {
                         setTimeout(function() {
                             audio.play().catch(function(error) {
                                 console.error("Play failed:", error);
-                                updatePlayerState("Error");
+                                updatePlayerState("error");
                             });
                         }, 100);
                     } else {
@@ -98,20 +120,19 @@ window.EchoAdsAudioController = {
             });
         }
         
-        function updatePlayerState(state) {
+        function updatePlayerState(stateKey) {
             if (statusDisplay) {
-                statusDisplay.textContent = state;
+                statusDisplay.textContent = t(stateKey);
             }
             playerContainer.className = playerContainer.className.replace(/\s*(loading|playing|paused)/g, '');
-            // Preserve hidden class if player is not visible
             if (!isPlayerVisible) {
                 playerContainer.classList.add('echoads-hidden');
             }
-            if (state === "Loading...") {
+            if (stateKey === "loading") {
                 playerContainer.classList.add('loading');
-            } else if (state === "Playing") {
+            } else if (stateKey === "playing") {
                 playerContainer.classList.add('playing');
-            } else if (state === "Paused") {
+            } else if (stateKey === "paused") {
                 playerContainer.classList.add('paused');
             }
         }
@@ -127,11 +148,11 @@ window.EchoAdsAudioController = {
                 return;
             }
 
-            updatePlayerState("Checking status...");
+            updatePlayerState("checking_status");
 
             if (typeof jQuery === "undefined") {
                 console.error("jQuery is required for status check");
-                updatePlayerState("Error");
+                updatePlayerState("error");
                 if (callback) callback(false);
                 return;
             }
@@ -145,35 +166,31 @@ window.EchoAdsAudioController = {
                 timeout: 10000,
                 success: function(response) {
                     audioStatusChecked = true;
-                    
                     var status = null;
                     if (response.success && response.data && response.data.audioStatus) {
                         status = response.data.audioStatus;
                     } else if (response.audioStatus) {
                         status = response.audioStatus;
                     }
-
                     audioStatus = status;
-
                     if (status === 'COMPLETED') {
-                        updatePlayerState("Ready");
+                        updatePlayerState("ready");
                         if (callback) callback(true);
                     } else {
-                        var statusMessage = status || 'Unknown';
-                        updatePlayerState("Status: " + statusMessage);
                         if (status === 'PENDING' || status === 'PROCESSING') {
-                            updatePlayerState("Audio is being generated...");
+                            updatePlayerState("audio_being_generated");
                         } else if (status === 'FAILED' || status === 'SKIPPED') {
-                            updatePlayerState("Audio generation " + status.toLowerCase());
+                            updatePlayerState("audio_generation");
+                            if (statusDisplay) statusDisplay.textContent = t("audio_generation") + " " + (status ? status.toLowerCase() : "");
                         } else {
-                            updatePlayerState("Audio not ready");
+                            updatePlayerState("audio_not_ready");
                         }
                         if (callback) callback(false);
                     }
                 },
                 error: function(xhr, status, error) {
                     console.error("Error checking audio status:", error);
-                    updatePlayerState("Status check failed");
+                    updatePlayerState("status_check_failed");
                     if (callback) callback(true);
                 }
             });
@@ -181,11 +198,9 @@ window.EchoAdsAudioController = {
         
         function loadTrack(index) {
             if (index >= tracks.length || index < 0) return;
-            
             currentTrack = index;
-            updatePlayerState("Loading...");
+            updatePlayerState("loading");
             updateWaveformState();
-            
             audio.src = tracks[index].url;
             if (trackDisplay) {
                 trackDisplay.textContent = tracks[index].name;
@@ -238,11 +253,11 @@ window.EchoAdsAudioController = {
                 if (playing) {
                     playIcon.style.display = "none";
                     pauseIcon.style.display = "block";
-                    playPauseBtn.setAttribute("aria-label", "Pause");
+                    playPauseBtn.setAttribute("aria-label", t("pause"));
                 } else {
                     playIcon.style.display = "block";
                     pauseIcon.style.display = "none";
-                    playPauseBtn.setAttribute("aria-label", "Play");
+                    playPauseBtn.setAttribute("aria-label", t("play"));
                 }
             }
         }
@@ -326,24 +341,22 @@ window.EchoAdsAudioController = {
             if (durationSpan) {
                 durationSpan.textContent = formatTime(audio.duration);
             }
-            updatePlayerState("Ready");
+            updatePlayerState("ready");
         });
-        
         audio.addEventListener("timeupdate", updateWaveformProgress);
-        
         audio.addEventListener("ended", function() {
             if (currentTrack < tracks.length - 1) {
                 loadTrack(currentTrack + 1);
                 setTimeout(function() {
                     audio.play().catch(function(error) {
                         console.error("Auto-play failed:", error);
-                        updatePlayerState("Ready");
+                        updatePlayerState("ready");
                         updatePlayPauseButton(false);
                     });
                 }, 100);
             } else {
                 updatePlayPauseButton(false);
-                updatePlayerState("Finished");
+                updatePlayerState("finished");
                 waveformBars.forEach(function(bar) {
                     bar.classList.remove('active');
                 });
@@ -351,36 +364,30 @@ window.EchoAdsAudioController = {
                 isPlaying = false;
             }
         });
-        
         audio.addEventListener("play", function() {
             isPlaying = true;
             updatePlayPauseButton(true);
-            updatePlayerState("Playing");
-            
+            updatePlayerState("playing");
             var track = tracks[currentTrack];
-            if (track.trackingUrl) {
+            if (track && track.trackingUrl) {
                 callTrackingEndpoint(track.trackingUrl, audioData.apiKey, track.campaignAudioId);
             }
         });
-        
         audio.addEventListener("pause", function() {
             isPlaying = false;
             updatePlayPauseButton(false);
-            updatePlayerState("Paused");
+            updatePlayerState("paused");
         });
-        
         audio.addEventListener("waiting", function() {
-            updatePlayerState("Buffering...");
+            updatePlayerState("buffering");
         });
-        
         audio.addEventListener("canplay", function() {
             if (!isPlaying) {
-                updatePlayerState("Ready");
+                updatePlayerState("ready");
             }
         });
-        
         audio.addEventListener("error", function() {
-            updatePlayerState("Error");
+            updatePlayerState("error");
             console.error("Audio error:", audio.error);
         });
         
@@ -391,7 +398,7 @@ window.EchoAdsAudioController = {
                     if (canPlay) {
                         audio.play().catch(function(error) {
                             console.error("Play failed:", error);
-                            updatePlayerState("Error");
+                            updatePlayerState("error");
                         });
                     } else {
                         updatePlayPauseButton(false);
@@ -401,16 +408,11 @@ window.EchoAdsAudioController = {
                 audio.pause();
             }
         });
-        
-        // Waveform click for seeking
+        // Waveform click for seeking (RTL-aware)
         function handleWaveformClick(e) {
             if (!isSeekingAllowed()) return;
-            
             var rect = waveform.getBoundingClientRect();
-            var clickX = e.clientX - rect.left;
-            var width = rect.width;
-            var clickPercent = Math.max(0, Math.min(1, clickX / width));
-            
+            var clickPercent = getClickPercent(e.clientX, rect);
             if (audio.duration) {
                 audio.currentTime = clickPercent * audio.duration;
             }
@@ -428,13 +430,9 @@ window.EchoAdsAudioController = {
         document.addEventListener("mousemove", function(e) {
             if (isDragging && isSeekingAllowed()) {
                 var rect = waveform.getBoundingClientRect();
-                var clickX = e.clientX - rect.left;
-                var width = rect.width;
-                var clickPercent = Math.max(0, Math.min(1, clickX / width));
-                
+                var clickPercent = getClickPercent(e.clientX, rect);
                 var totalBars = waveformBars.length;
                 var activeBars = Math.floor(clickPercent * totalBars);
-                
                 waveformBars.forEach(function(bar, index) {
                     if (index < activeBars) {
                         bar.classList.add('active');
@@ -442,22 +440,17 @@ window.EchoAdsAudioController = {
                         bar.classList.remove('active');
                     }
                 });
-                
                 if (audio.duration) {
                     currentTimeSpan.textContent = formatTime(clickPercent * audio.duration);
                 }
             }
         });
-        
         document.addEventListener("mouseup", function(e) {
             if (isDragging) {
                 isDragging = false;
                 if (isSeekingAllowed()) {
                     var rect = waveform.getBoundingClientRect();
-                    var clickX = e.clientX - rect.left;
-                    var width = rect.width;
-                    var clickPercent = Math.max(0, Math.min(1, clickX / width));
-                    
+                    var clickPercent = getClickPercent(e.clientX, rect);
                     if (audio.duration) {
                         audio.currentTime = clickPercent * audio.duration;
                     }
@@ -570,7 +563,7 @@ window.EchoAdsAudioController = {
             }
         });
         
-        // Touch support for mobile
+        // Touch support for mobile (RTL-aware)
         var touchStartX = 0;
         waveform.addEventListener("touchstart", function(e) {
             if (!isSeekingAllowed()) return;
@@ -578,26 +571,18 @@ window.EchoAdsAudioController = {
             isDragging = true;
             touchStartX = e.touches[0].clientX;
             var rect = waveform.getBoundingClientRect();
-            var clickX = touchStartX - rect.left;
-            var width = rect.width;
-            var clickPercent = Math.max(0, Math.min(1, clickX / width));
-            
+            var clickPercent = getClickPercentFromTouch(e.touches[0], rect);
             if (audio.duration) {
                 audio.currentTime = clickPercent * audio.duration;
             }
         });
-        
         waveform.addEventListener("touchmove", function(e) {
             if (isDragging && isSeekingAllowed()) {
                 e.preventDefault();
                 var rect = waveform.getBoundingClientRect();
-                var clickX = e.touches[0].clientX - rect.left;
-                var width = rect.width;
-                var clickPercent = Math.max(0, Math.min(1, clickX / width));
-                
+                var clickPercent = getClickPercentFromTouch(e.touches[0], rect);
                 var totalBars = waveformBars.length;
                 var activeBars = Math.floor(clickPercent * totalBars);
-                
                 waveformBars.forEach(function(bar, index) {
                     if (index < activeBars) {
                         bar.classList.add('active');
@@ -605,23 +590,18 @@ window.EchoAdsAudioController = {
                         bar.classList.remove('active');
                     }
                 });
-                
                 if (audio.duration) {
                     currentTimeSpan.textContent = formatTime(clickPercent * audio.duration);
                 }
             }
         });
-        
         waveform.addEventListener("touchend", function(e) {
             if (isDragging) {
                 e.preventDefault();
                 isDragging = false;
                 if (isSeekingAllowed()) {
                     var rect = waveform.getBoundingClientRect();
-                    var clickX = touchStartX - rect.left;
-                    var width = rect.width;
-                    var clickPercent = Math.max(0, Math.min(1, clickX / width));
-                    
+                    var clickPercent = getClickPercent(touchStartX, rect);
                     if (audio.duration) {
                         audio.currentTime = clickPercent * audio.duration;
                     }

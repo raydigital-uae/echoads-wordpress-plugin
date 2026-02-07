@@ -157,7 +157,7 @@
 }
 
 .echoads-field-input.has-toggle {
-    padding-right: 40px;
+    padding-inline-end: 40px;
 }
 
 .echoads-field-input::placeholder {
@@ -181,7 +181,7 @@
 /* Toggle button for password visibility */
 .echoads-toggle-button {
     position: absolute;
-    right: 2px;
+    inset-inline-end: 2px;
     top: 50%;
     transform: translateY(-50%);
     background: #f0f0f0; /* Light grey like OTP box */

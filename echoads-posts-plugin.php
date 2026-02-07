@@ -14,6 +14,11 @@ require_once plugin_dir_path(__FILE__) . 'includes/class-plugin.php';
 
 function echoads_plugin_init()
 {
+    load_plugin_textdomain(
+        'echoads-posts-plugin',
+        false,
+        dirname(plugin_basename(__FILE__)) . '/languages'
+    );
     EchoAds_Plugin::get_instance();
 }
 add_action('init', 'echoads_plugin_init');

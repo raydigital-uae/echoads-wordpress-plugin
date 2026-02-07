@@ -46,12 +46,12 @@ class EchoAds_Audio_Player
 
         if (empty($audio_endpoint)) {
             error_log('Error: Audio endpoint URL is not set.');
-            return '<p>Error: Audio endpoint URL is not set. Please configure it in the plugin settings.</p>';
+            return '<p>' . esc_html__('Error: Audio endpoint URL is not set. Please configure it in the plugin settings.', 'echoads-posts-plugin') . '</p>';
         }
 
         if (empty($api_key)) {
             error_log('Error: API key is not set for audio endpoint.');
-            return '<p>Error: API key is not configured. Please set it in the plugin settings.</p>';
+            return '<p>' . esc_html__('Error: API key is not configured. Please set it in the plugin settings.', 'echoads-posts-plugin') . '</p>';
         }
 
         $audio_data = $this->fetch_audio_data($audio_endpoint, $api_key, $post_id);
@@ -159,15 +159,17 @@ class EchoAds_Audio_Player
             $status_endpoint = rtrim($endpoint, '/') . '/' . $post_id . '/status';
         }
 
+        $dir_attr = is_rtl() ? 'rtl' : 'ltr';
         ob_start();
         ?>
         <div class="echoads-player-wrapper"
-             id="<?php echo esc_attr($unique_id); ?>-wrapper">
+             id="<?php echo esc_attr($unique_id); ?>-wrapper"
+             dir="<?php echo esc_attr($dir_attr); ?>">
             <!-- Listen Button (Initial State) -->
             <div class="echoads-listen-btn-container"
                  id="<?php echo esc_attr($unique_id); ?>-listen-btn-container"
                  role="button"
-                 aria-label="Listen to this article"
+                 aria-label="<?php echo esc_attr__('Listen to this article', 'echoads-posts-plugin'); ?>"
                  tabindex="0">
                 <button class="echoads-listen-btn"
                         style="background: <?php echo esc_attr($bg_color); ?>;"
@@ -187,7 +189,7 @@ class EchoAds_Audio_Player
                     </svg>
                 </button>
 
-                <span class="echoads-listen-text">Listen to this Article</span>
+                <span class="echoads-listen-text"><?php echo esc_html__('Listen to this Article', 'echoads-posts-plugin'); ?></span>
             </div>
 
             <!-- Audio Player (Hidden Initially) -->
@@ -196,19 +198,19 @@ class EchoAds_Audio_Player
                  style="background: <?php echo esc_attr($bg_color); ?>;"
                  tabindex="0"
                  role="region"
-                 aria-label="Audio Player">
+                 aria-label="<?php echo esc_attr__('Audio Player', 'echoads-posts-plugin'); ?>">
 
                 <!-- Hidden elements for track info and status -->
                 <span class="sr-only"
-                      id="<?php echo esc_attr($unique_id); ?>-track">Audio Player</span>
+                      id="<?php echo esc_attr($unique_id); ?>-track"><?php echo esc_html__('Audio Player', 'echoads-posts-plugin'); ?></span>
                 <span class="sr-only"
-                      id="<?php echo esc_attr($unique_id); ?>-status">Ready</span>
+                      id="<?php echo esc_attr($unique_id); ?>-status"><?php echo esc_html__('Ready', 'echoads-posts-plugin'); ?></span>
 
                 <!-- Play/Pause Button -->
                 <button class="echoads-play-pause-btn"
                         id="<?php echo esc_attr($unique_id); ?>-play-pause"
-                        title="Play/Pause"
-                        aria-label="Play"
+                        title="<?php echo esc_attr__('Play/Pause', 'echoads-posts-plugin'); ?>"
+                        aria-label="<?php echo esc_attr__('Play', 'echoads-posts-plugin'); ?>"
                         tabindex="0">
 
                     <svg class="play-icon"
@@ -251,7 +253,7 @@ class EchoAds_Audio_Player
                 <div class="echoads-waveform"
                      id="<?php echo esc_attr($unique_id); ?>-progress"
                      role="slider"
-                     aria-label="Audio progress"
+                     aria-label="<?php echo esc_attr__('Audio progress', 'echoads-posts-plugin'); ?>"
                      aria-valuemin="0"
                      aria-valuemax="100"
                      aria-valuenow="0"
@@ -276,8 +278,8 @@ class EchoAds_Audio_Player
                      id="<?php echo esc_attr($unique_id); ?>-volume-control">
                     <button class="echoads-volume-btn"
                             id="<?php echo esc_attr($unique_id); ?>-volume-btn"
-                            title="Volume"
-                            aria-label="Volume"
+                            title="<?php echo esc_attr__('Volume', 'echoads-posts-plugin'); ?>"
+                            aria-label="<?php echo esc_attr__('Volume', 'echoads-posts-plugin'); ?>"
                             aria-expanded="false"
                             tabindex="0">
                         <svg class="volume-icon"
@@ -321,7 +323,7 @@ class EchoAds_Audio_Player
                                    max="100"
                                    value="80"
                                    id="<?php echo esc_attr($unique_id); ?>-volume-input"
-                                   aria-label="Volume level"
+                                   aria-label="<?php echo esc_attr__('Volume level', 'echoads-posts-plugin'); ?>"
                                    orient="vertical">
                             <div class="echoads-volume-track">
                                 <div class="echoads-volume-fill"
@@ -334,7 +336,7 @@ class EchoAds_Audio_Player
                 <!-- Hidden Audio Element -->
                 <audio preload="metadata"
                        id="<?php echo esc_attr($unique_id); ?>-audio">
-                    Your browser does not support the audio element.
+                    <?php echo esc_html__('Your browser does not support the audio element.', 'echoads-posts-plugin'); ?>
                 </audio>
 
                 <!-- Hidden duration for JS -->
@@ -401,6 +403,42 @@ class EchoAds_Audio_Player
             array('jquery'),
             $js_version,
             true
+        );
+        wp_localize_script('echoads-audio-player', 'echoads_i18n', $this->get_front_end_i18n());
+    }
+
+    /**
+     * Returns translated strings and RTL flag for the front-end audio player script.
+     *
+     * @return array<string, string|bool>
+     */
+    private function get_front_end_i18n()
+    {
+        return array(
+            'listen_to_article' => __('Listen to this Article', 'echoads-posts-plugin'),
+            'audio_player' => __('Audio Player', 'echoads-posts-plugin'),
+            'ready' => __('Ready', 'echoads-posts-plugin'),
+            'play' => __('Play', 'echoads-posts-plugin'),
+            'pause' => __('Pause', 'echoads-posts-plugin'),
+            'volume' => __('Volume', 'echoads-posts-plugin'),
+            'audio_progress' => __('Audio progress', 'echoads-posts-plugin'),
+            'volume_level' => __('Volume level', 'echoads-posts-plugin'),
+            'loading' => __('Loading...', 'echoads-posts-plugin'),
+            'playing' => __('Playing', 'echoads-posts-plugin'),
+            'paused' => __('Paused', 'echoads-posts-plugin'),
+            'error' => __('Error', 'echoads-posts-plugin'),
+            'checking_status' => __('Checking status...', 'echoads-posts-plugin'),
+            'audio_being_generated' => __('Audio is being generated...', 'echoads-posts-plugin'),
+            'status_check_failed' => __('Status check failed', 'echoads-posts-plugin'),
+            'buffering' => __('Buffering...', 'echoads-posts-plugin'),
+            'finished' => __('Finished', 'echoads-posts-plugin'),
+            'pre_roll_ad' => __('Pre-Roll Ad', 'echoads-posts-plugin'),
+            'article_audio' => __('Article Audio', 'echoads-posts-plugin'),
+            'post_roll_ad' => __('Post-Roll Ad', 'echoads-posts-plugin'),
+            'status_label' => __('Status:', 'echoads-posts-plugin'),
+            'audio_not_ready' => __('Audio not ready', 'echoads-posts-plugin'),
+            'audio_generation' => __('Audio generation', 'echoads-posts-plugin'),
+            'isRtl' => (bool) is_rtl(),
         );
     }
 

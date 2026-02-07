@@ -23,8 +23,8 @@ class EchoAds_Settings
     public function add_settings_page()
     {
         add_options_page(
-            'EchoAds Settings',
-            'EchoAds',
+            __('EchoAds Settings', 'echoads-posts-plugin'),
+            __('EchoAds', 'echoads-posts-plugin'),
             'manage_options',
             'auto-send-plugin',
             array($this, 'settings_page_content')
@@ -33,19 +33,20 @@ class EchoAds_Settings
 
     public function settings_page_content()
     {
+        $dir_attr = is_rtl() ? 'rtl' : 'ltr';
         ?>
-        <div class="echoads-admin-page">
+        <div class="echoads-admin-page" dir="<?php echo esc_attr($dir_attr); ?>">
             <div class="wrap">
                 <div class="echoads-settings-container">
                     <div class="echoads-settings-header">
                         <div class="echoads-settings-icon">
-                            <img src="<?php echo plugin_dir_url(dirname(__FILE__)) . 'assets/white-logo.png'; ?>"
-                                 alt="EchoAds Logo"
+                            <img src="<?php echo esc_url(plugin_dir_url(dirname(__FILE__)) . 'assets/white-logo.png'); ?>"
+                                 alt="<?php echo esc_attr__('EchoAds Logo', 'echoads-posts-plugin'); ?>"
                                  style="max-width: 200px; height: auto;" />
                         </div>
                         <div class="echoads-settings-title">
-                            <h1>EchoAds Settings</h1>
-                            <p class="echoads-settings-subtitle">Configure your audio player and API endpoints</p>
+                            <h1><?php echo esc_html__('EchoAds Settings', 'echoads-posts-plugin'); ?></h1>
+                            <p class="echoads-settings-subtitle"><?php echo esc_html__('Configure your audio player and API endpoints', 'echoads-posts-plugin'); ?></p>
                         </div>
                     </div>
 
@@ -55,24 +56,24 @@ class EchoAds_Settings
                             <?php settings_fields('auto_send_plugin_settings'); ?>
 
                             <div class="echoads-form-section">
-                                <h2>API Configuration</h2>
-                                <p>Configure your API credentials and main endpoint for post data transmission.</p>
+                                <h2><?php echo esc_html__('API Configuration', 'echoads-posts-plugin'); ?></h2>
+                                <p><?php echo esc_html__('Configure your API credentials and main endpoint for post data transmission.', 'echoads-posts-plugin'); ?></p>
 
                                 <div class="echoads-field-group">
                                     <label class="echoads-field-label"
-                                           for="<?php echo esc_attr(self::OPTION_API_KEY); ?>">API Key</label>
+                                           for="<?php echo esc_attr(self::OPTION_API_KEY); ?>"><?php echo esc_html__('API Key', 'echoads-posts-plugin'); ?></label>
                                     <div class="echoads-field-wrapper">
                                         <input type="password"
                                                id="<?php echo esc_attr(self::OPTION_API_KEY); ?>"
                                                name="<?php echo esc_attr(self::OPTION_API_KEY); ?>"
                                                value="<?php echo esc_attr(get_option(self::OPTION_API_KEY)); ?>"
                                                class="echoads-field-input has-toggle"
-                                               placeholder="Enter your API key"
+                                               placeholder="<?php echo esc_attr__('Enter your API key', 'echoads-posts-plugin'); ?>"
                                                autocomplete="off" />
                                         <button type="button"
                                                 class="echoads-toggle-button"
                                                 id="api-key-toggle"
-                                                title="Show/Hide API Key">
+                                                title="<?php echo esc_attr__('Show/Hide API Key', 'echoads-posts-plugin'); ?>">
                                             <svg class="eye-open"
                                                  viewBox="0 0 24 24"
                                                  fill="none"
@@ -111,27 +112,25 @@ class EchoAds_Settings
                                             </svg>
                                         </button>
                                     </div>
-                                    <p class="echoads-field-description">Your secure API key for authentication with the
-                                        endpoint.</p>
+                                    <p class="echoads-field-description"><?php echo esc_html__('Your secure API key for authentication with the endpoint.', 'echoads-posts-plugin'); ?></p>
                                 </div>
 
                                 <div class="echoads-field-group">
                                     <label class="echoads-field-label"
-                                           for="<?php echo esc_attr(self::OPTION_BASE_URL); ?>">Base URL</label>
+                                           for="<?php echo esc_attr(self::OPTION_BASE_URL); ?>"><?php echo esc_html__('Base URL', 'echoads-posts-plugin'); ?></label>
                                     <input type="text"
                                            id="<?php echo esc_attr(self::OPTION_BASE_URL); ?>"
                                            name="<?php echo esc_attr(self::OPTION_BASE_URL); ?>"
                                            value="<?php echo esc_attr(get_option(self::OPTION_BASE_URL)); ?>"
                                            class="echoads-field-input"
-                                           placeholder="example.com/api"
+                                           placeholder="<?php echo esc_attr__('example.com/api', 'echoads-posts-plugin'); ?>"
                                            autocomplete="url" />
-                                    <p class="echoads-field-description">The base URL for all API endpoints (e.g., example.com/api). All endpoint routes will be appended to this base URL.</p>
+                                    <p class="echoads-field-description"><?php echo esc_html__('The base URL for all API endpoints (e.g., example.com/api). All endpoint routes will be appended to this base URL.', 'echoads-posts-plugin'); ?></p>
                                 </div>
 
                                 <div class="echoads-field-group">
                                     <label class="echoads-field-label"
-                                           for="<?php echo esc_attr(self::OPTION_TIMEOUT); ?>">Request Timeout
-                                        (seconds)</label>
+                                           for="<?php echo esc_attr(self::OPTION_TIMEOUT); ?>"><?php echo esc_html__('Request Timeout (seconds)', 'echoads-posts-plugin'); ?></label>
                                     <input type="number"
                                            id="<?php echo esc_attr(self::OPTION_TIMEOUT); ?>"
                                            name="<?php echo esc_attr(self::OPTION_TIMEOUT); ?>"
@@ -141,43 +140,39 @@ class EchoAds_Settings
                                            max="600"
                                            step="1"
                                            placeholder="120" />
-                                    <p class="echoads-field-description">Maximum time to wait for the backend to respond (10-600
-                                        seconds). Longer articles may require more time. Default: 120 seconds.</p>
+                                    <p class="echoads-field-description"><?php echo esc_html__('Maximum time to wait for the backend to respond (10-600 seconds). Longer articles may require more time. Default: 120 seconds.', 'echoads-posts-plugin'); ?></p>
                                 </div>
                             </div>
 
                             <div class="echoads-form-section">
-                                <h2>Audio Configuration</h2>
-                                <p>Configure audio player appearance and placement settings.</p>
+                                <h2><?php echo esc_html__('Audio Configuration', 'echoads-posts-plugin'); ?></h2>
+                                <p><?php echo esc_html__('Configure audio player appearance and placement settings.', 'echoads-posts-plugin'); ?></p>
 
                                 <div class="echoads-field-group">
                                     <label class="echoads-field-label"
-                                           for="<?php echo esc_attr(self::OPTION_PLAYER_BG_COLOR); ?>">Player Background
-                                        Color</label>
+                                           for="<?php echo esc_attr(self::OPTION_PLAYER_BG_COLOR); ?>"><?php echo esc_html__('Player Background Color', 'echoads-posts-plugin'); ?></label>
                                     <input type="text"
                                            id="<?php echo esc_attr(self::OPTION_PLAYER_BG_COLOR); ?>"
                                            name="<?php echo esc_attr(self::OPTION_PLAYER_BG_COLOR); ?>"
                                            value="<?php echo esc_attr(get_option(self::OPTION_PLAYER_BG_COLOR, '#5D33F5')); ?>"
                                            class="echoads-color-picker" />
-                                    <p class="echoads-field-description">Choose a background color for the audio player. Default:
-                                        #5D33F5</p>
+                                    <p class="echoads-field-description"><?php echo esc_html__('Choose a background color for the audio player. Default: #5D33F5', 'echoads-posts-plugin'); ?></p>
                                 </div>
 
                                 <div class="echoads-field-group">
                                     <label class="echoads-field-label"
-                                           for="<?php echo esc_attr(self::OPTION_PLAYER_POSITION); ?>">Player Position</label>
+                                           for="<?php echo esc_attr(self::OPTION_PLAYER_POSITION); ?>"><?php echo esc_html__('Player Position', 'echoads-posts-plugin'); ?></label>
                                     <select id="<?php echo esc_attr(self::OPTION_PLAYER_POSITION); ?>"
                                             name="<?php echo esc_attr(self::OPTION_PLAYER_POSITION); ?>"
                                             class="echoads-field-input">
                                         <option value="above" <?php selected(get_option(self::OPTION_PLAYER_POSITION, 'below'), 'above'); ?>>
-                                            Above Article
+                                            <?php echo esc_html__('Above Article', 'echoads-posts-plugin'); ?>
                                         </option>
                                         <option value="below" <?php selected(get_option(self::OPTION_PLAYER_POSITION, 'below'), 'below'); ?>>
-                                            Below Article
+                                            <?php echo esc_html__('Below Article', 'echoads-posts-plugin'); ?>
                                         </option>
                                     </select>
-                                    <p class="echoads-field-description">Choose where to display the audio player in relation to your
-                                        post content. Default: Below Article</p>
+                                    <p class="echoads-field-description"><?php echo esc_html__('Choose where to display the audio player in relation to your post content. Default: Below Article', 'echoads-posts-plugin'); ?></p>
                                 </div>
                             </div>
 
@@ -196,7 +191,7 @@ class EchoAds_Settings
                                         <polyline points="7,3 7,8 15,8"
                                                   fill="white" />
                                     </svg>
-                                    Save Settings
+                                    <?php echo esc_html__('Save Settings', 'echoads-posts-plugin'); ?>
                                 </button>
                             </div>
                         </form>
@@ -219,7 +214,7 @@ class EchoAds_Settings
                                           stroke-linecap="round"
                                           stroke-linejoin="round" />
                                 </svg>
-                                Health Check
+                                <?php echo esc_html__('Health Check', 'echoads-posts-plugin'); ?>
                             </h3>
                             <div class="echoads-health-check-content">
                                 <div class="echoads-health-check-actions">
@@ -241,7 +236,7 @@ class EchoAds_Settings
                                                   stroke-linecap="round"
                                                   stroke-linejoin="round" />
                                         </svg>
-                                        Test Connection
+                                        <?php echo esc_html__('Test Connection', 'echoads-posts-plugin'); ?>
                                     </button>
                                     <div class="echoads-status-indicator echoads-status-ready"
                                          id="health-status">
@@ -255,7 +250,7 @@ class EchoAds_Settings
                                                     r="10"
                                                     fill="currentColor" />
                                         </svg>
-                                        Ready
+                                        <?php echo esc_html__('Ready', 'echoads-posts-plugin'); ?>
                                     </div>
                                 </div>
                                 <div id="health-check-response"
@@ -362,13 +357,34 @@ class EchoAds_Settings
 
         wp_enqueue_script('jquery');
         wp_enqueue_script('wp-color-picker');
-        wp_add_inline_script('jquery', $this->get_health_check_script());
+        $i18n = $this->get_admin_i18n();
+        $inline_script = 'var echoads_admin_i18n = ' . wp_json_encode($i18n) . ";\n" . $this->get_health_check_script();
+        wp_add_inline_script('jquery', $inline_script);
+    }
+
+    /**
+     * Returns translated strings for the admin settings script.
+     *
+     * @return array<string, string>
+     */
+    private function get_admin_i18n()
+    {
+        return array(
+            'show_api_key' => __('Show API Key', 'echoads-posts-plugin'),
+            'hide_api_key' => __('Hide API Key', 'echoads-posts-plugin'),
+            'missing_config' => __('Missing Configuration', 'echoads-posts-plugin'),
+            'please_fill_both' => __('Please fill in both API Key and Base URL before testing.', 'echoads-posts-plugin'),
+            'testing' => __('Testing...', 'echoads-posts-plugin'),
+            'connection_success' => __('Connection Successful', 'echoads-posts-plugin'),
+            'connection_failed' => __('Connection Failed', 'echoads-posts-plugin'),
+        );
     }
 
     private function get_health_check_script()
     {
         return "
         jQuery(document).ready(function($) {
+            var i18n = typeof echoads_admin_i18n !== 'undefined' ? echoads_admin_i18n : {};
             // Initialize color picker
             $('.echoads-color-picker').wpColorPicker();
 
@@ -383,12 +399,12 @@ class EchoAds_Settings
                     input.attr('type', 'text');
                     eyeOpen.hide();
                     eyeClosed.show();
-                    $(this).attr('title', 'Hide API Key');
+                    $(this).attr('title', i18n.hide_api_key || 'Hide API Key');
                 } else {
                     input.attr('type', 'password');
                     eyeOpen.show();
                     eyeClosed.hide();
-                    $(this).attr('title', 'Show API Key');
+                    $(this).attr('title', i18n.show_api_key || 'Show API Key');
                 }
             });
 
@@ -400,14 +416,14 @@ class EchoAds_Settings
                 if (!apiKey || !baseUrl) {
                     var statusIndicator = $('#health-status');
                     var responseDiv = $('#health-check-response');
-                    statusIndicator.removeClass().addClass('echoads-status-indicator echoads-status-error').text('Missing Configuration');
-                    responseDiv.text('Please fill in both API Key and Base URL before testing.');
+                    statusIndicator.removeClass().addClass('echoads-status-indicator echoads-status-error').text(i18n.missing_config || 'Missing Configuration');
+                    responseDiv.text(i18n.please_fill_both || 'Please fill in both API Key and Base URL before testing.');
                     return;
                 }
                 
                 // Ensure base URL has protocol
                 var baseUrlWithProtocol = baseUrl;
-                if (!baseUrl.match(/^https?:\/\//)) {
+                if (!baseUrl.match(/^https?:\\/\\//)) {
                     baseUrlWithProtocol = 'https://' + baseUrl;
                 }
                 
@@ -415,7 +431,7 @@ class EchoAds_Settings
                 var statusIndicator = $('#health-status');
                 var responseDiv = $('#health-check-response');
 
-                statusIndicator.removeClass().addClass('echoads-status-indicator echoads-status-loading').text('Testing...');
+                statusIndicator.removeClass().addClass('echoads-status-indicator echoads-status-loading').text(i18n.testing || 'Testing...');
                 responseDiv.empty();
 
                 $.ajax({
@@ -426,11 +442,11 @@ class EchoAds_Settings
                     },
                     timeout: 10000,
                     success: function(response) {
-                        statusIndicator.removeClass().addClass('echoads-status-indicator echoads-status-success').text('Connection Successful');
+                        statusIndicator.removeClass().addClass('echoads-status-indicator echoads-status-success').text(i18n.connection_success || 'Connection Successful');
                         responseDiv.text(JSON.stringify(response, null, 2));
                     },
                     error: function(xhr, status, error) {
-                        statusIndicator.removeClass().addClass('echoads-status-indicator echoads-status-error').text('Connection Failed');
+                        statusIndicator.removeClass().addClass('echoads-status-indicator echoads-status-error').text(i18n.connection_failed || 'Connection Failed');
                         var errorMsg = 'Error: ' + error;
                         if (xhr.responseText) {
                             try {
