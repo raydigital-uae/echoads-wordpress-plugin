@@ -261,7 +261,8 @@ window.EchoAdsAudioController = {
 
         function sendTrackingOnce(track, playPositionSeconds) {
             if (!track || !track.trackingUrl) return;
-            var key = (track.campaignAudioId != null && track.campaignAudioId !== '') ? String(track.campaignAudioId) : ('track-' + currentTrack);
+            var baseKey = (track.campaignAudioId != null && track.campaignAudioId !== '') ? String(track.campaignAudioId) : ('track-' + currentTrack);
+            var key = baseKey + '-' + (typeof playPositionSeconds === 'number' ? playPositionSeconds : 0);
             if (trackingSentThisPage[key]) return;
             trackingSentThisPage[key] = true;
             visitorIdPromise.then(function(visitorId) {
