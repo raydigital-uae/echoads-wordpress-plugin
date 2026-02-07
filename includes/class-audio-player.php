@@ -396,9 +396,17 @@ class EchoAds_Audio_Player
         );
 
         wp_enqueue_script(
+            'fingerprintjs-v5',
+            'https://openfpcdn.io/fingerprintjs/v5/umd.min.js',
+            array(),
+            '5',
+            true
+        );
+
+        wp_enqueue_script(
             'echoads-audio-player',
             $plugin_url . 'assets/js/audio-player.js',
-            array('jquery'),
+            array('jquery', 'fingerprintjs-v5'),
             $js_version,
             true
         );

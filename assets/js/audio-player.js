@@ -2,6 +2,37 @@ window.EchoAdsAudioController = {
     init: function(playerId) {
         var audioData = window.EchoAdsAudioPlayers[playerId];
         if (!audioData) return;
+
+        var SESSION_STORAGE_KEY = 'echoads_play_session_id';
+        var playSessionId = null;
+        try {
+            playSessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
+        } catch (e) {}
+        if (!playSessionId) {
+            playSessionId = typeof crypto !== 'undefined' && crypto.randomUUID
+                ? crypto.randomUUID()
+                : 'echoads-' + Date.now() + '-' + Math.random().toString(36).substring(2, 15);
+            try {
+                sessionStorage.setItem(SESSION_STORAGE_KEY, playSessionId);
+            } catch (e) {}
+        }
+
+        if (typeof window.echoadsVisitorIdPromise === 'undefined') {
+            window.echoadsVisitorIdPromise = (function() {
+                var FP = window.FingerprintJS;
+                if (typeof FP === 'undefined' || typeof FP.load !== 'function') {
+                    return Promise.resolve(null);
+                }
+                return FP.load()
+                    .then(function(agent) {
+                        return agent && typeof agent.get === 'function'
+                            ? agent.get().then(function(result) { return result.visitorId || null; })
+                            : Promise.resolve(null);
+                    })
+                    .catch(function() { return null; });
+            })();
+        }
+        var visitorIdPromise = window.echoadsVisitorIdPromise;
         
         // Get wrapper and listen button container elements
         var listenBtnContainer = document.getElementById(playerId + "-listen-btn-container");
@@ -40,6 +71,8 @@ window.EchoAdsAudioController = {
         var lastVolume = 80;
         var isPlayerVisible = false;
         var isVolumePopupOpen = false;
+        var fiveSecondTrackingSent = false;
+        var trackingSentThisPage = {};
         
         var tracks = [
             { url: audioData.preRoll, name: "Pre-Roll Ad", trackingUrl: audioData.prerollTrackingUrl, campaignAudioId: audioData.preRollAudioId, allowSeeking: false },
@@ -181,11 +214,10 @@ window.EchoAdsAudioController = {
         
         function loadTrack(index) {
             if (index >= tracks.length || index < 0) return;
-            
             currentTrack = index;
+            fiveSecondTrackingSent = false;
             updatePlayerState("Loading...");
             updateWaveformState();
-            
             audio.src = tracks[index].url;
             if (trackDisplay) {
                 trackDisplay.textContent = tracks[index].name;
@@ -193,13 +225,25 @@ window.EchoAdsAudioController = {
             audio.load();
         }
         
-        function callTrackingEndpoint(url, apiKey, campaignAudioId) {
+        function callTrackingEndpoint(options) {
+            var url = options.url;
+            var apiKey = options.apiKey;
+            var campaignAudioId = options.campaignAudioId;
+            var playPositionSeconds = options.playPositionSeconds;
+            var sessionId = options.playSessionId;
+            var visitorId = options.visitorId;
             if (!url || typeof jQuery === "undefined") return;
-            
+            var requestBody = {
+                campaignAudioId: campaignAudioId ?? null,
+                playSessionId: sessionId,
+                visitorId: visitorId,
+                playPositionSeconds: typeof playPositionSeconds === 'number' ? playPositionSeconds : 0
+            };
             var ajaxOptions = {
                 url: url,
                 type: "POST",
                 contentType: "application/json",
+                data: JSON.stringify(requestBody),
                 success: function(response) {
                     console.log("Tracking call successful:", response);
                 },
@@ -207,23 +251,29 @@ window.EchoAdsAudioController = {
                     console.error("Tracking call failed:", error);
                 }
             };
-            
             if (apiKey) {
                 ajaxOptions.headers = {
                     'x-api-key': apiKey
                 };
             }
-            
-            var requestBody = {};
-            if (campaignAudioId !== null && campaignAudioId !== undefined) {
-                requestBody.campaignAudioId = campaignAudioId;
-            }
-            
-            if (Object.keys(requestBody).length > 0) {
-                ajaxOptions.data = JSON.stringify(requestBody);
-            }
-            
             jQuery.ajax(ajaxOptions);
+        }
+
+        function sendTrackingOnce(track, playPositionSeconds) {
+            if (!track || !track.trackingUrl) return;
+            var key = (track.campaignAudioId != null && track.campaignAudioId !== '') ? String(track.campaignAudioId) : ('track-' + currentTrack);
+            if (trackingSentThisPage[key]) return;
+            trackingSentThisPage[key] = true;
+            visitorIdPromise.then(function(visitorId) {
+                callTrackingEndpoint({
+                    url: track.trackingUrl,
+                    apiKey: audioData.apiKey,
+                    campaignAudioId: track.campaignAudioId,
+                    playPositionSeconds: playPositionSeconds,
+                    playSessionId: playSessionId,
+                    visitorId: visitorId
+                });
+            });
         }
         
         function formatTime(seconds) {
@@ -299,14 +349,10 @@ window.EchoAdsAudioController = {
         
         function updateWaveformProgress() {
             if (isDragging) return;
-            
             var progress = (audio.currentTime / audio.duration) * 100;
             if (isNaN(progress)) progress = 0;
-            
-            // Update waveform bars based on progress
             var totalBars = waveformBars.length;
             var activeBars = Math.floor((progress / 100) * totalBars);
-            
             waveformBars.forEach(function(bar, index) {
                 if (index < activeBars) {
                     bar.classList.add('active');
@@ -314,11 +360,13 @@ window.EchoAdsAudioController = {
                     bar.classList.remove('active');
                 }
             });
-            
-            // Update ARIA value
             waveform.setAttribute('aria-valuenow', Math.round(progress));
-            
             currentTimeSpan.textContent = formatTime(audio.currentTime);
+            var track = tracks[currentTrack];
+            if (track && track.trackingUrl && !fiveSecondTrackingSent && Math.floor(audio.currentTime) >= 5) {
+                fiveSecondTrackingSent = true;
+                sendTrackingOnce(track, 5);
+            }
         }
         
         // Audio event listeners
@@ -356,10 +404,9 @@ window.EchoAdsAudioController = {
             isPlaying = true;
             updatePlayPauseButton(true);
             updatePlayerState("Playing");
-            
             var track = tracks[currentTrack];
             if (track.trackingUrl) {
-                callTrackingEndpoint(track.trackingUrl, audioData.apiKey, track.campaignAudioId);
+                sendTrackingOnce(track, 0);
             }
         });
         
