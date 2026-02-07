@@ -19,21 +19,18 @@ window.EchoAdsAudioController = {
 
         if (typeof window.echoadsVisitorIdPromise === 'undefined') {
             window.echoadsVisitorIdPromise = (function() {
-                return (typeof import === 'function'
-                    ? import('https://openfpcdn.io/fingerprintjs/v5')
-                    : Promise.resolve(null)
-                ).then(function(m) {
-                    if (!m) return null;
-                    var FP = m.default || m;
-                    return typeof FP.load === 'function' ? FP.load() : null;
-                }).then(function(agent) {
-                    return agent && typeof agent.get === 'function'
-                        ? agent.get().then(function(result) { return result.visitorId || null; })
-                        : Promise.resolve(null);
-                }).catch(function() {
-                    return null;
-                });
-            }());
+                var FP = window.FingerprintJS;
+                if (typeof FP === 'undefined' || typeof FP.load !== 'function') {
+                    return Promise.resolve(null);
+                }
+                return FP.load()
+                    .then(function(agent) {
+                        return agent && typeof agent.get === 'function'
+                            ? agent.get().then(function(result) { return result.visitorId || null; })
+                            : Promise.resolve(null);
+                    })
+                    .catch(function() { return null; });
+            })();
         }
         var visitorIdPromise = window.echoadsVisitorIdPromise;
         
