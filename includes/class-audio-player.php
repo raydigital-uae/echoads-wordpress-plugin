@@ -11,6 +11,7 @@ class EchoAds_Audio_Player
     {
         add_filter('the_content', array($this, 'add_audio_player'));
         add_action('wp_enqueue_scripts', array($this, 'enqueue_assets'));
+        add_filter('script_loader_tag', array($this, 'add_module_type_to_audio_player_script'), 10, 3);
     }
 
     public function add_audio_player($content)
@@ -402,6 +403,22 @@ class EchoAds_Audio_Player
             $js_version,
             true
         );
+    }
+
+    /**
+     * Adds type="module" to the audio player script tag so dynamic import() is allowed.
+     *
+     * @param string $tag    The complete script tag.
+     * @param string $handle The script handle.
+     * @param string $src    The script source URL.
+     * @return string The modified or original script tag.
+     */
+    public function add_module_type_to_audio_player_script($tag, $handle, $src)
+    {
+        if ($handle === 'echoads-audio-player') {
+            return str_replace('<script ', '<script type="module" ', $tag);
+        }
+        return $tag;
     }
 
     /**

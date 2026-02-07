@@ -236,7 +236,7 @@ window.EchoAdsAudioController = {
             var visitorId = options.visitorId;
             if (!url || typeof jQuery === "undefined") return;
             var requestBody = {
-                campaignAudioId: campaignAudioId !== null && campaignAudioId !== undefined ? campaignAudioId : null,
+                campaignAudioId: campaignAudioId ?? null,
                 playSessionId: sessionId,
                 visitorId: visitorId,
                 playPositionSeconds: typeof playPositionSeconds === 'number' ? playPositionSeconds : 0
@@ -403,7 +403,6 @@ window.EchoAdsAudioController = {
             isPlaying = true;
             updatePlayPauseButton(true);
             updatePlayerState("Playing");
-            fiveSecondTrackingSent = false;
             var track = tracks[currentTrack];
             if (track.trackingUrl) {
                 sendTrackingOnce(track, 0);
