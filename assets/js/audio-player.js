@@ -195,24 +195,38 @@ window.EchoAdsAudioController = {
             isPlayerVisible = true;
         }
         
+        function playWhenAudioReady() {
+            var playNow = function() {
+                audio.play().catch(function(error) {
+                    console.error("Play failed:", error);
+                    updatePlayerState("Error");
+                });
+            };
+            if (audio.readyState >= 2) {
+                playNow();
+            } else {
+                var onCanPlay = function() {
+                    audio.removeEventListener("canplay", onCanPlay);
+                    playNow();
+                };
+                audio.addEventListener("canplay", onCanPlay);
+            }
+        }
+
         // Listen button container click handler
         if (listenBtnContainer) {
             listenBtnContainer.addEventListener("click", function() {
                 showPlayer();
-                
+
                 // Check status and start playing
                 checkAudioStatus(function(canPlay) {
                     if (canPlay) {
                         if (tracks.length > 0 && !audio.src) {
                             loadTrack(0);
+                            playWhenAudioReady();
+                        } else if (audio.src) {
+                            playWhenAudioReady();
                         }
-                        // Small delay to ensure track is loaded
-                        setTimeout(function() {
-                            audio.play().catch(function(error) {
-                                console.error("Play failed:", error);
-                                updatePlayerState("Error");
-                            });
-                        }, 100);
                     } else {
                         updatePlayPauseButton(false);
                     }
@@ -828,6 +842,8 @@ window.EchoAdsAudioController = {
                     wrapper.setAttribute("dir", "ltr");
                     wrapper.classList.remove("echoads-rtl");
                 }
+                wrapper.classList.remove("echoads-hidden");
+                wrapper.removeAttribute("data-echoads-waiting-config");
             }
             applyTranslationsToDom(translationsMap);
             updatePlayPauseButton(isPlaying);
@@ -837,12 +853,7 @@ window.EchoAdsAudioController = {
                 checkAudioStatus(function(canPlay) {
                     if (canPlay) {
                         if (!audio.src) loadTrack(0);
-                        setTimeout(function() {
-                            audio.play().catch(function(err) {
-                                console.error("Autoplay failed:", err);
-                                updatePlayerState(translationsMap ? translationsMap.statusError : "Error");
-                            });
-                        }, 100);
+                        playWhenAudioReady();
                     }
                 });
             }

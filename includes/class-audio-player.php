@@ -164,8 +164,9 @@ class EchoAds_Audio_Player
 
         ob_start();
         ?>
-        <div class="echoads-player-wrapper"
-             id="<?php echo esc_attr($unique_id); ?>-wrapper">
+        <div class="echoads-player-wrapper echoads-hidden"
+             id="<?php echo esc_attr($unique_id); ?>-wrapper"
+             data-echoads-waiting-config="1">
             <!-- Listen Button (Initial State) -->
             <div class="echoads-listen-btn-container"
                  id="<?php echo esc_attr($unique_id); ?>-listen-btn-container"
