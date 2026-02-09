@@ -164,187 +164,9 @@ class EchoAds_Audio_Player
 
         ob_start();
         ?>
-        <div class="echoads-player-wrapper echoads-hidden"
-             id="<?php echo esc_attr($unique_id); ?>-wrapper"
-             data-echoads-waiting-config="1">
-            <!-- Listen Button (Initial State) -->
-            <div class="echoads-listen-btn-container"
-                 id="<?php echo esc_attr($unique_id); ?>-listen-btn-container"
-                 role="button"
-                 aria-label="Listen to this article"
-                 tabindex="0">
-                <button class="echoads-listen-btn"
-                        style="background: <?php echo esc_attr($bg_color); ?>;"
-                        tabindex="-1">
-                    <svg class="echoads-listen-icon"
-                         width="24"
-                         height="24"
-                         viewBox="0 0 24 24"
-                         fill="none"
-                         xmlns="http://www.w3.org/2000/svg">
-                        <path d="M16.2111 11.1056L9.73666 7.86833C8.93878 7.46939 8 8.04958 8 8.94164V15.0584C8 15.9504 8.93878 16.5306 9.73666 16.1317L16.2111 12.8944C16.9482 12.5259 16.9482 11.4741 16.2111 11.1056Z"
-                              fill="white"
-                              stroke="white"
-                              stroke-width="2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round" />
-                    </svg>
-                </button>
-
-                <span class="echoads-listen-text">Listen to this Article</span>
-            </div>
-
-            <!-- Audio Player (Hidden Initially) -->
-            <div class="echoads-audio-player echoads-hidden"
-                 id="<?php echo esc_attr($unique_id); ?>"
-                 style="background: <?php echo esc_attr($bg_color); ?>;"
-                 tabindex="0"
-                 role="region"
-                 aria-label="Audio Player">
-
-                <!-- Hidden elements for track info and status -->
-                <span class="sr-only"
-                      id="<?php echo esc_attr($unique_id); ?>-track">Audio Player</span>
-                <span class="sr-only"
-                      id="<?php echo esc_attr($unique_id); ?>-status">Ready</span>
-
-                <!-- Play/Pause Button -->
-                <button class="echoads-play-pause-btn"
-                        id="<?php echo esc_attr($unique_id); ?>-play-pause"
-                        title="Play/Pause"
-                        aria-label="Play"
-                        tabindex="0">
-
-                    <svg class="play-icon"
-                         width="24"
-                         height="24"
-                         viewBox="0 0 24 24"
-                         fill="none"
-                         xmlns="http://www.w3.org/2000/svg">
-                        <path d="M16.2111 11.1056L9.73666 7.86833C8.93878 7.46939 8 8.04958 8 8.94164V15.0584C8 15.9504 8.93878 16.5306 9.73666 16.1317L16.2111 12.8944C16.9482 12.5259 16.9482 11.4741 16.2111 11.1056Z"
-                              fill="white"
-                              stroke="white"
-                              stroke-width="2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round" />
-                    </svg>
-
-                    <svg class="pause-icon"
-                         style="display: none;"
-                         width="24"
-                         height="24"
-                         viewBox="0 0 24 24"
-                         fill="none"
-                         xmlns="http://www.w3.org/2000/svg">
-                        <rect x="6"
-                              y="5"
-                              width="4"
-                              height="14"
-                              rx="1"
-                              fill="white" />
-                        <rect x="14"
-                              y="5"
-                              width="4"
-                              height="14"
-                              rx="1"
-                              fill="white" />
-                    </svg>
-                </button>
-
-                <!-- Waveform Visualization -->
-                <div class="echoads-waveform"
-                     id="<?php echo esc_attr($unique_id); ?>-progress"
-                     role="slider"
-                     aria-label="Audio progress"
-                     aria-valuemin="0"
-                     aria-valuemax="100"
-                     aria-valuenow="0"
-                     tabindex="0">
-                    <div class="echoads-waveform-bars">
-                        <?php for ($i = 0; $i < 24; $i++): ?>
-                            <div class="echoads-bar"
-                                 data-index="<?php echo $i; ?>"></div>
-                        <?php endfor; ?>
-                    </div>
-                    <div class="echoads-waveform-progress"
-                         id="<?php echo esc_attr($unique_id); ?>-fill"></div>
-                </div>
-
-                <!-- Time Display -->
-                <div class="echoads-time-display">
-                    <span id="<?php echo esc_attr($unique_id); ?>-current-time">0:00</span>
-                </div>
-
-                <!-- Volume Control -->
-                <div class="echoads-volume-control"
-                     id="<?php echo esc_attr($unique_id); ?>-volume-control">
-                    <button class="echoads-volume-btn"
-                            id="<?php echo esc_attr($unique_id); ?>-volume-btn"
-                            title="Volume"
-                            aria-label="Volume"
-                            aria-expanded="false"
-                            tabindex="0">
-                        <svg class="volume-icon"
-                             width="24"
-                             height="24"
-                             viewBox="0 0 24 24"
-                             fill="none"
-                             xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3.15838 13.9306C2.44537 12.7423 2.44537 11.2577 3.15838 10.0694C3.37596 9.70674 3.73641 9.45272 4.1511 9.36978L5.84413 9.03117C5.94499 9.011 6.03591 8.95691 6.10176 8.87788L8.17085 6.39498C9.3534 4.97592 9.94468 4.26638 10.4723 4.45742C11 4.64846 11 5.57207 11 7.41928L11 16.5807C11 18.4279 11 19.3515 10.4723 19.5426C9.94468 19.7336 9.3534 19.0241 8.17085 17.605L6.10176 15.1221C6.03591 15.0431 5.94499 14.989 5.84413 14.9688L4.1511 14.6302C3.73641 14.5473 3.37596 14.2933 3.15838 13.9306Z"
-                                  stroke="white"
-                                  stroke-width="2" />
-                            <path d="M15.5355 8.46447C16.4684 9.39732 16.9948 10.6611 17 11.9803C17.0052 13.2996 16.4888 14.5674 15.5633 15.5076"
-                                  stroke="white"
-                                  stroke-width="2"
-                                  stroke-linecap="round" />
-                            <path d="M19.6569 6.34314C21.1494 7.83572 21.9916 9.85769 21.9999 11.9685C22.0083 14.0793 21.182 16.1078 19.7012 17.6121"
-                                  stroke="white"
-                                  stroke-width="2"
-                                  stroke-linecap="round" />
-                        </svg>
-                        <svg class="volume-muted-icon"
-                             style="display: none;"
-                             width="24"
-                             height="24"
-                             viewBox="0 0 24 24"
-                             fill="none"
-                             xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3.15838 13.9306C2.44537 12.7423 2.44537 11.2577 3.15838 10.0694C3.37596 9.70674 3.73641 9.45272 4.1511 9.36978L5.84413 9.03117C5.94499 9.011 6.03591 8.95691 6.10176 8.87788L8.17085 6.39498C9.3534 4.97592 9.94468 4.26638 10.4723 4.45742C11 4.64846 11 5.57207 11 7.41928L11 16.5807C11 18.4279 11 19.3515 10.4723 19.5426C9.94468 19.7336 9.3534 19.0241 8.17085 17.605L6.10176 15.1221C6.03591 15.0431 5.94499 14.989 5.84413 14.9688L4.1511 14.6302C3.73641 14.5473 3.37596 14.2933 3.15838 13.9306Z"
-                                  stroke="white"
-                                  stroke-width="2" />
-                        </svg>
-                    </button>
-
-                    <!-- Volume Popup -->
-                    <div class="echoads-volume-popup"
-                         id="<?php echo esc_attr($unique_id); ?>-volume-popup">
-                        <div class="echoads-volume-slider-wrapper">
-                            <input type="range"
-                                   class="echoads-volume-slider"
-                                   min="0"
-                                   max="100"
-                                   value="80"
-                                   id="<?php echo esc_attr($unique_id); ?>-volume-input"
-                                   aria-label="Volume level"
-                                   orient="vertical">
-                            <div class="echoads-volume-track">
-                                <div class="echoads-volume-fill"
-                                     id="<?php echo esc_attr($unique_id); ?>-volume-fill"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Hidden Audio Element -->
-                <audio preload="metadata"
-                       id="<?php echo esc_attr($unique_id); ?>-audio">
-                    Your browser does not support the audio element.
-                </audio>
-
-                <!-- Hidden duration for JS -->
-                <span class="sr-only"
-                      id="<?php echo esc_attr($unique_id); ?>-duration">0:00</span>
-            </div>
+        <!-- React will render the player UI here -->
+        <div id="<?php echo esc_attr($unique_id); ?>-wrapper" 
+             data-bg-color="<?php echo esc_attr($bg_color); ?>">
         </div>
 
         <script>
@@ -390,28 +212,20 @@ class EchoAds_Audio_Player
         $plugin_url = plugin_dir_url(dirname(__FILE__));
         $plugin_path = plugin_dir_path(dirname(__FILE__));
 
-        $css_version = $this->get_file_version($plugin_path . 'assets/css/audio-player.css');
-        $js_version = $this->get_file_version($plugin_path . 'assets/js/audio-player.js');
+        $css_version = $this->get_file_version($plugin_path . 'assets/dist/echoads-audio-player.css');
+        $js_version = $this->get_file_version($plugin_path . 'assets/dist/echoads-audio-player.js');
 
         wp_enqueue_style(
             'echoads-audio-player',
-            $plugin_url . 'assets/css/audio-player.css',
+            $plugin_url . 'assets/dist/echoads-audio-player.css',
             array(),
             $css_version
         );
 
         wp_enqueue_script(
-            'fingerprintjs-v5',
-            'https://openfpcdn.io/fingerprintjs/v5/umd.min.js',
-            array(),
-            '5',
-            true
-        );
-
-        wp_enqueue_script(
             'echoads-audio-player',
-            $plugin_url . 'assets/js/audio-player.js',
-            array('jquery', 'fingerprintjs-v5'),
+            $plugin_url . 'assets/dist/echoads-audio-player.js',
+            array(),
             $js_version,
             true
         );

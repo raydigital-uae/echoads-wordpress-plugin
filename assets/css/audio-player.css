@@ -343,7 +343,7 @@
     position: absolute;
     width: 100px;
     height: 32px;
-    transform: rotate(-90deg);
+    transform: rotate(90deg);
     transform-origin: center center;
     -webkit-appearance: none;
     appearance: none;
