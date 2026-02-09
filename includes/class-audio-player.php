@@ -153,10 +153,13 @@ class EchoAds_Audio_Player
         $bg_color = EchoAds_Settings::get_player_bg_color();
         $endpoint = EchoAds_Settings::get_endpoint();
 
-        // Construct status endpoint URL (endpoint already includes base path e.g. .../website-articles)
+        // Construct status and config endpoint URLs (endpoint already includes base path e.g. .../website-articles)
         $status_endpoint = '';
+        $config_endpoint = '';
         if (!empty($endpoint)) {
-            $status_endpoint = rtrim($endpoint, '/') . '/' . $post_id . '/status';
+            $base = rtrim($endpoint, '/');
+            $status_endpoint = $base . '/' . $post_id . '/status';
+            $config_endpoint = $base . '/config';
         }
 
         ob_start();
@@ -353,6 +356,7 @@ class EchoAds_Audio_Player
                     postrollTrackingUrl: "<?php echo esc_js($postroll_tracking_endpoint); ?>",
                     apiKey: "<?php echo esc_js($api_key); ?>",
                     statusEndpoint: "<?php echo esc_js($status_endpoint); ?>",
+                    configEndpoint: "<?php echo esc_js($config_endpoint); ?>",
                     preRollAudioId: <?php echo isset($audio_data['preRollAudioId']) && $audio_data['preRollAudioId'] !== null ? json_encode($audio_data['preRollAudioId']) : 'null'; ?>,
                     postRollAudioId: <?php echo isset($audio_data['postRollAudioId']) && $audio_data['postRollAudioId'] !== null ? json_encode($audio_data['postRollAudioId']) : 'null'; ?>,
                     articleAudioId: <?php echo isset($audio_data['articleAudioId']) && $audio_data['articleAudioId'] !== null ? json_encode($audio_data['articleAudioId']) : 'null'; ?>
@@ -424,6 +428,6 @@ class EchoAds_Audio_Player
         if (file_exists($file_path)) {
             return filemtime($file_path);
         }
-        return '1.0.1';
+        return '1.0.2';
     }
 }

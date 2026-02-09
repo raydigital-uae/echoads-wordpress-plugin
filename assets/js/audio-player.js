@@ -1,8 +1,104 @@
+(function() {
+    var CONFIG_CACHE_KEY = 'echoads_player_config';
+    function fetchPlayerConfig(configEndpoint, apiKey) {
+        if (!configEndpoint || typeof jQuery === 'undefined') {
+            return Promise.resolve({ language: { code: 'en' }, defaultPlaybackSetting: 'CLICK_TO_PLAY' });
+        }
+        if (typeof window[CONFIG_CACHE_KEY] === 'undefined') {
+            window[CONFIG_CACHE_KEY] = jQuery.ajax({
+                url: configEndpoint,
+                type: 'GET',
+                headers: apiKey ? { 'x-api-key': apiKey } : {},
+                timeout: 8000,
+                dataType: 'json'
+            }).then(function(response) {
+                var data = response && response.data ? response.data : response;
+                return {
+                    language: (data && data.language) ? data.language : { code: 'en' },
+                    defaultPlaybackSetting: (data && data.defaultPlaybackSetting) ? String(data.defaultPlaybackSetting).toUpperCase() : 'CLICK_TO_PLAY'
+                };
+            }).catch(function() {
+                return { language: { code: 'en' }, defaultPlaybackSetting: 'CLICK_TO_PLAY' };
+            });
+        }
+        return window[CONFIG_CACHE_KEY];
+    }
+
+    var TRANSLATIONS = {
+        en: {
+            listenToArticle: 'Listen to this Article',
+            listenToArticleAria: 'Listen to this article',
+            audioPlayerAria: 'Audio Player',
+            play: 'Play',
+            pause: 'Pause',
+            playPauseTitle: 'Play/Pause',
+            audioProgressAria: 'Audio progress',
+            volumeTitle: 'Volume',
+            volumeAria: 'Volume',
+            volumeLevelAria: 'Volume level',
+            statusReady: 'Ready',
+            statusLoading: 'Loading...',
+            statusPlaying: 'Playing',
+            statusPaused: 'Paused',
+            statusError: 'Error',
+            statusBuffering: 'Buffering...',
+            statusFinished: 'Finished',
+            statusChecking: 'Checking status...',
+            statusGenerating: 'Audio is being generated...',
+            statusNotReady: 'Audio not ready',
+            statusCheckFailed: 'Status check failed',
+            statusFailed: 'Audio generation failed',
+            statusSkipped: 'Audio generation skipped'
+        },
+        ar: {
+            listenToArticle: 'استمع للخبر الآن',
+            listenToArticleAria: 'استمع للخبر الآن',
+            audioPlayerAria: 'مشغل صوتي',
+            play: 'تشغيل',
+            pause: 'إيقاف',
+            playPauseTitle: 'تشغيل/إيقاف',
+            audioProgressAria: 'تقدم التشغيل',
+            volumeTitle: 'مستوى الصوت',
+            volumeAria: 'مستوى الصوت',
+            volumeLevelAria: 'مستوى الصوت',
+            statusReady: 'جاهز',
+            statusLoading: 'جاري التحميل...',
+            statusPlaying: 'جاري التشغيل',
+            statusPaused: 'متوقف',
+            statusError: 'خطأ',
+            statusBuffering: 'جاري التخزين المؤقت...',
+            statusFinished: 'انتهى',
+            statusChecking: 'جاري التحقق...',
+            statusGenerating: 'جاري إنشاء الصوت...',
+            statusNotReady: 'الصوت غير جاهز',
+            statusCheckFailed: 'فشل التحقق من الحالة',
+            statusFailed: 'فشل إنشاء الصوت',
+            statusSkipped: 'تم تخطي إنشاء الصوت'
+        }
+    };
+
+    var STATUS_TO_TRANSLATION_KEY = {
+        'Ready': 'statusReady',
+        'Loading...': 'statusLoading',
+        'Playing': 'statusPlaying',
+        'Paused': 'statusPaused',
+        'Error': 'statusError',
+        'Buffering...': 'statusBuffering',
+        'Finished': 'statusFinished',
+        'Checking status...': 'statusChecking',
+        'Audio is being generated...': 'statusGenerating',
+        'Audio not ready': 'statusNotReady',
+        'Status check failed': 'statusCheckFailed',
+        'Audio generation failed': 'statusFailed',
+        'Audio generation skipped': 'statusSkipped'
+    };
+
 window.EchoAdsAudioController = {
     init: function(playerId) {
         var audioData = window.EchoAdsAudioPlayers[playerId];
         if (!audioData) return;
 
+        var wrapper = document.getElementById(playerId + "-wrapper");
         var SESSION_STORAGE_KEY = 'echoads_play_session_id';
         var playSessionId = null;
         try {
@@ -73,6 +169,7 @@ window.EchoAdsAudioController = {
         var isVolumePopupOpen = false;
         var fiveSecondTrackingSent = false;
         var trackingSentThisPage = {};
+        var translationsMap = null;
         
         var tracks = [
             { url: audioData.preRoll, name: "Pre-Roll Ad", trackingUrl: audioData.prerollTrackingUrl, campaignAudioId: audioData.preRollAudioId, allowSeeking: false },
@@ -133,7 +230,12 @@ window.EchoAdsAudioController = {
         
         function updatePlayerState(state) {
             if (statusDisplay) {
-                statusDisplay.textContent = state;
+                var displayText = state;
+                if (translationsMap) {
+                    var key = STATUS_TO_TRANSLATION_KEY[state];
+                    if (key && translationsMap[key] !== undefined) displayText = translationsMap[key];
+                }
+                statusDisplay.textContent = displayText;
             }
             playerContainer.className = playerContainer.className.replace(/\s*(loading|playing|paused)/g, '');
             // Preserve hidden class if player is not visible
@@ -286,15 +388,17 @@ window.EchoAdsAudioController = {
         
         function updatePlayPauseButton(playing) {
             if (playIcon && pauseIcon) {
+                var label = playing
+                    ? (translationsMap ? translationsMap.pause : "Pause")
+                    : (translationsMap ? translationsMap.play : "Play");
                 if (playing) {
                     playIcon.style.display = "none";
                     pauseIcon.style.display = "block";
-                    playPauseBtn.setAttribute("aria-label", "Pause");
                 } else {
                     playIcon.style.display = "block";
                     pauseIcon.style.display = "none";
-                    playPauseBtn.setAttribute("aria-label", "Play");
                 }
+                playPauseBtn.setAttribute("aria-label", label);
             }
         }
         
@@ -690,8 +794,63 @@ window.EchoAdsAudioController = {
                 listenBtnContainer.style.pointerEvents = 'none';
             }
         }
+
+        function applyTranslationsToDom(t) {
+            if (!t) return;
+            var listenText = listenBtnContainer ? listenBtnContainer.querySelector(".echoads-listen-text") : null;
+            if (listenText) listenText.textContent = t.listenToArticle;
+            if (listenBtnContainer) listenBtnContainer.setAttribute("aria-label", t.listenToArticleAria);
+            if (playerContainer) playerContainer.setAttribute("aria-label", t.audioPlayerAria);
+            if (playPauseBtn) {
+                playPauseBtn.setAttribute("title", t.playPauseTitle);
+                playPauseBtn.setAttribute("aria-label", isPlaying ? t.pause : t.play);
+            }
+            if (waveform) waveform.setAttribute("aria-label", t.audioProgressAria);
+            if (volumeBtn) {
+                volumeBtn.setAttribute("title", t.volumeTitle);
+                volumeBtn.setAttribute("aria-label", t.volumeAria);
+            }
+            if (volumeInput) volumeInput.setAttribute("aria-label", t.volumeLevelAria);
+        }
+
+        fetchPlayerConfig(audioData.configEndpoint, audioData.apiKey).then(function(config) {
+            var langCode = (config.language && config.language.code) ? String(config.language.code).toLowerCase() : "en";
+            var isRtl = langCode === "ar";
+            var playbackSetting = (config.defaultPlaybackSetting || "CLICK_TO_PLAY").toUpperCase();
+            var isAutoplay = playbackSetting === "AUTOPLAY";
+
+            translationsMap = TRANSLATIONS[langCode] || TRANSLATIONS.en;
+            if (wrapper) {
+                if (isRtl) {
+                    wrapper.setAttribute("dir", "rtl");
+                    wrapper.classList.add("echoads-rtl");
+                } else {
+                    wrapper.setAttribute("dir", "ltr");
+                    wrapper.classList.remove("echoads-rtl");
+                }
+            }
+            applyTranslationsToDom(translationsMap);
+            updatePlayPauseButton(isPlaying);
+
+            if (isAutoplay && tracks.length > 0) {
+                showPlayer();
+                checkAudioStatus(function(canPlay) {
+                    if (canPlay) {
+                        if (!audio.src) loadTrack(0);
+                        setTimeout(function() {
+                            audio.play().catch(function(err) {
+                                console.error("Autoplay failed:", err);
+                                updatePlayerState(translationsMap ? translationsMap.statusError : "Error");
+                            });
+                        }, 100);
+                    }
+                });
+            }
+        });
     }
 };
+
+})();
 
 // Process any players that were registered before this script loaded (avoids race condition)
 (function() {

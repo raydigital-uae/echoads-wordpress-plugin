@@ -545,3 +545,22 @@
         transition: none;
     }
 }
+
+/* RTL (e.g. Arabic) - keep player on the right in both listen and expanded states */
+.echoads-player-wrapper.echoads-rtl {
+    direction: rtl;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.echoads-player-wrapper.echoads-rtl .echoads-listen-btn-container {
+    flex-direction: row-reverse;
+}
+
+.echoads-player-wrapper.echoads-rtl .echoads-audio-player {
+    flex-direction: row-reverse;
+}
+
+.echoads-player-wrapper.echoads-rtl .echoads-waveform-bars {
+    direction: ltr;
+}
