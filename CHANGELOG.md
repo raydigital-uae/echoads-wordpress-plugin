@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.1.0...v1.2.0) (2026-02-17)
+
+
+### ✨ Features
+
+* bump version ([6ac71c9](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/6ac71c933f1a633db9e023664d7f20d042aaf6f9))
+* bump version ([8dcb7ae](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/8dcb7ae7458b9d6e87aaec665ea945b094e9420c))
+
 ## [1.1.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.0.2...v1.1.0) (2026-02-17)
 
 
