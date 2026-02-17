@@ -1,0 +1,72 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  build-release:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build React assets
+        run: bun run build
+
+      - name: Create plugin zip
+        run: |
+          # Create a clean directory for the plugin
+          mkdir -p dist/echoads-audio-player
+
+          # Copy plugin files (excluding dev files)
+          cp echoads-posts-plugin.php dist/echoads-audio-player/
+          cp -r includes dist/echoads-audio-player/
+          cp -r languages dist/echoads-audio-player/
+
+          # Copy assets (including built dist)
+          mkdir -p dist/echoads-audio-player/assets
+          cp -r assets/css dist/echoads-audio-player/assets/
+          cp -r assets/dist dist/echoads-audio-player/assets/
+          cp assets/white-logo.png dist/echoads-audio-player/assets/ 2>/dev/null || true
+
+          # Create the zip file
+          cd dist
+          zip -r echoads-audio-player-${{ needs.release-please.outputs.version }}.zip echoads-audio-player
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.release-please.outputs.tag_name }}
+          files: dist/echoads-audio-player-${{ needs.release-please.outputs.version }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
