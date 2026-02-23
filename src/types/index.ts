@@ -16,7 +16,6 @@ export interface PlayerConfig {
   language: {
     code: string;
   };
-  defaultPlaybackSetting: 'CLICK_TO_PLAY' | 'AUTOPLAY';
 }
 
 export interface AudioTrack {

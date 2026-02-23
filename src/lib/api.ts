@@ -9,7 +9,6 @@ export const fetchPlayerConfig = async (
   if (!configEndpoint) {
     return Promise.resolve({
       language: { code: 'en' },
-      defaultPlaybackSetting: 'CLICK_TO_PLAY'
     });
   }
 
@@ -27,15 +26,11 @@ export const fetchPlayerConfig = async (
         const data = json && json.data ? json.data : json;
         return {
           language: (data && data.language) ? data.language : { code: 'en' },
-          defaultPlaybackSetting: (data && data.defaultPlaybackSetting)
-            ? String(data.defaultPlaybackSetting).toUpperCase() as 'CLICK_TO_PLAY' | 'AUTOPLAY'
-            : 'CLICK_TO_PLAY'
         };
       })
       .catch(() => {
         return {
           language: { code: 'en' },
-          defaultPlaybackSetting: 'CLICK_TO_PLAY' as const
         };
       });
   }

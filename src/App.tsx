@@ -24,7 +24,6 @@ export const AudioPlayer = ({  audioData, bgColor }: AudioPlayerProps) => {
   const langCode = config?.language?.code || 'en';
   const translations = useTranslations(langCode);
   const isRtl = langCode.toLowerCase() === 'ar';
-  const isAutoplay = config?.defaultPlaybackSetting === 'AUTOPLAY';
 
   const {
     audioRef,
@@ -124,7 +123,7 @@ export const AudioPlayer = ({  audioData, bgColor }: AudioPlayerProps) => {
 
   // Autoplay on mount if config says so
   useEffect(() => {
-    if (!isLoading && config && isAutoplay && tracks.length > 0 && !showPlayer) {
+    if (!isLoading && config && tracks.length > 0 && !showPlayer) {
       setShowPlayer(true);
       
       performStatusCheck().then((canPlayAudio) => {
@@ -157,7 +156,7 @@ export const AudioPlayer = ({  audioData, bgColor }: AudioPlayerProps) => {
         }
       });
     }
-  }, [isLoading, config, isAutoplay, tracks.length, showPlayer, audioRef, loadTrack, play, changeVolume]);
+  }, [isLoading, config, tracks.length, showPlayer, audioRef, loadTrack, play, changeVolume]);
 
   // Don't render anything until config is loaded
   if (isLoading) {
