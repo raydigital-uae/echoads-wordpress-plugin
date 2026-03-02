@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.2.0...v1.3.0) (2026-03-02)
+
+
+### ✨ Features
+
+* remove default playback settings ([647f4a9](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/647f4a92a827516470614bbe44522f6e090d832b))
+* remove default playback settings ([3cb89d2](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/3cb89d2201fdb0c050a8f27eb65057c56f9c3677))
+
 ## [1.2.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.1.0...v1.2.0) (2026-02-17)
 
 
