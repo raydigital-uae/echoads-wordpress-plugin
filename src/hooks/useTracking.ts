@@ -1,34 +1,39 @@
-import { useRef, useCallback } from 'react';
-import { sendTracking } from '../lib/api';
-import { getVisitorId } from '../lib/session';
-import type { AudioTrack } from '../types';
+import { useRef, useCallback } from 'react'
+import { sendTracking } from '../lib/api'
+import { getVisitorId } from '../lib/session'
+import type { AudioTrack } from '../types'
 
 export const useTracking = (apiKey: string, playSessionId: string) => {
-  const trackingSentRef = useRef<Record<string, boolean>>({});
+  const trackingSentRef = useRef<Record<string, boolean>>({})
 
   const sendTrackingOnce = useCallback(
-    async (track: AudioTrack, playPositionSeconds: number, trackIndex: number) => {
-      if (!track || !track.trackingUrl) return;
+    async (
+      track: AudioTrack,
+      playPositionSeconds: number,
+      trackIndex: number
+    ) => {
+      if (!track || !track.trackingUrl) return
 
-      const baseKey = track.campaignAudioId != null && track.campaignAudioId !== ''
-        ? String(track.campaignAudioId)
-        : `track-${trackIndex}`;
-      const key = `${baseKey}-${playPositionSeconds}`;
+      const baseKey =
+        track.campaignAudioId != null && track.campaignAudioId !== ''
+          ? String(track.campaignAudioId)
+          : `track-${trackIndex}`
+      const key = `${baseKey}-${playPositionSeconds}`
 
-      if (trackingSentRef.current[key]) return;
-      trackingSentRef.current[key] = true;
+      if (trackingSentRef.current[key]) return
+      trackingSentRef.current[key] = true
 
-      const visitorId = await getVisitorId();
-      
+      const visitorId = await getVisitorId()
+
       await sendTracking(track.trackingUrl, apiKey, {
         campaignAudioId: track.campaignAudioId,
         playSessionId,
         visitorId,
-        playPositionSeconds
-      });
+        playPositionSeconds,
+      })
     },
     [apiKey, playSessionId]
-  );
+  )
 
-  return { sendTrackingOnce };
-};
+  return { sendTrackingOnce }
+}

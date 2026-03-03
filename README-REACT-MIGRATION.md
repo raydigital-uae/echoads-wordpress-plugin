@@ -7,12 +7,14 @@ The audio player has been successfully migrated from vanilla JavaScript (878 lin
 ## What Changed
 
 ### Before
+
 - Single monolithic file: `assets/js/audio-player.js` (878 lines)
 - jQuery dependency for AJAX
 - Manual DOM manipulation
 - Hard to maintain and test
 
 ### After
+
 - Modular React components with TypeScript
 - Modern hooks-based architecture
 - Native `fetch()` API (no jQuery)
@@ -30,7 +32,6 @@ echoads-wordpress-plugin/
 │   │   ├── ListenButton/             # Initial CTA button
 │   │   ├── PlayerControls/           # Main player UI
 │   │   ├── Waveform/                 # Waveform visualization
-│   │   └── VolumeControl/            # Volume popup
 │   ├── hooks/
 │   │   ├── useConfig.ts              # Config API fetching
 │   │   ├── useTranslations.ts        # i18n support
@@ -59,16 +60,19 @@ echoads-wordpress-plugin/
 ## Development
 
 ### Install Dependencies
+
 ```bash
 bun install
 ```
 
 ### Build for Production
+
 ```bash
 bun run build
 ```
 
 ### Development Mode (watch)
+
 ```bash
 bun run dev
 ```
@@ -80,18 +84,17 @@ All original functionality has been maintained:
 - ✅ Config API fetch + cache
 - ✅ Hide player until config loads (no EN→AR flash)
 - ✅ CLICK_TO_PLAY: listen button → show player, play when canplay
-- ✅ AUTOPLAY: show player, check status, auto-play
 - ✅ Pre-roll, article, post-roll tracks with seeking rules
 - ✅ Status check API before play
 - ✅ Tracking: start + 5-second events, visitorId, sessionId
 - ✅ Translations (en/ar), RTL support
 - ✅ Keyboard and touch support
 - ✅ Waveform seeking for article track only
-- ✅ Volume popup, mute, slider
 
 ## WordPress Integration
 
 The PHP file (`includes/class-audio-player.php`) has been updated to:
+
 1. Render a minimal wrapper div
 2. Enqueue the built React bundle from `assets/dist/`
 3. Pass audio data via inline script (same as before)
@@ -110,6 +113,7 @@ React mounts into the wrapper and renders the entire player UI.
 If you need to rollback to the vanilla JS version:
 
 1. Restore the backup:
+
    ```bash
    mv assets/js/audio-player.js.backup assets/js/audio-player.js
    ```

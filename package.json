@@ -1,14 +1,19 @@
 {
   "name": "echoads-audio-player",
   "version": "1.1.1",
-  "description": "EchoAds Audio Player - React + Vite",
+  "description": "EchoAds Audio Player",
   "type": "module",
   "scripts": {
     "dev": "vite build --watch",
     "build": "vite build",
-    "prebuild": "mkdir -p assets/dist"
+    "prebuild": "mkdir -p assets/dist",
+    "format": "prettier --write ."
   },
-  "keywords": ["audio", "player", "wordpress"],
+  "keywords": [
+    "audio",
+    "player",
+    "wordpress"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
