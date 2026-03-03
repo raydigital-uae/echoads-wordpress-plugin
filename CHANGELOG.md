@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.3.0...v1.4.0) (2026-03-03)
+
+
+### ✨ Features
+
+* remove volume control and enhance ui ([eb863ca](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/eb863ca14aac3946ec66746695307e10f62daee0))
+
 ## [1.3.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.2.0...v1.3.0) (2026-03-02)
 
 ### ✨ Features
