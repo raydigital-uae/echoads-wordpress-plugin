@@ -44,7 +44,11 @@ export const AudioPlayer = ({ audioData, bgColor }: AudioPlayerProps) => {
     setStatus,
   } = useAudioPlayer(audioData)
 
-  const { sendTrackingOnce } = useTracking(audioData.apiKey, playSessionId)
+  const { sendTrackingOnce } = useTracking(
+    audioData.apiKey,
+    playSessionId,
+    audioData.articleExternalId
+  )
 
   // Check audio status
   const performStatusCheck = async () => {
