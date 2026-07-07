@@ -4,7 +4,8 @@ const CONFIG_CACHE_KEY = 'echoads_player_config'
 
 export const fetchPlayerConfig = async (
   configEndpoint: string,
-  apiKey: string
+  apiKey: string,
+  pluginVersion?: string
 ): Promise<PlayerConfig> => {
   if (!configEndpoint) {
     return Promise.resolve({
@@ -15,7 +16,10 @@ export const fetchPlayerConfig = async (
   if (typeof (window as any)[CONFIG_CACHE_KEY] === 'undefined') {
     ;(window as any)[CONFIG_CACHE_KEY] = fetch(configEndpoint, {
       method: 'GET',
-      headers: apiKey ? { 'x-api-key': apiKey } : {},
+      headers: {
+        ...(apiKey ? { 'x-api-key': apiKey } : {}),
+        ...(pluginVersion ? { 'x-plugin-version': pluginVersion } : {}),
+      },
       signal: AbortSignal.timeout(8000),
     })
       .then(async (response) => {

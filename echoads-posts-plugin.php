@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+define('ECHOADS_PLUGIN_VERSION', '1.1.1');
+
 require_once plugin_dir_path(__FILE__) . 'includes/class-plugin.php';
 
 function echoads_plugin_init()

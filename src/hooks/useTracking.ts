@@ -6,7 +6,8 @@ import type { AudioTrack } from '../types'
 export const useTracking = (
   apiKey: string,
   playSessionId: string,
-  articleExternalId?: string
+  articleExternalId?: string,
+  pluginVersion?: string
 ) => {
   const trackingSentRef = useRef<Record<string, boolean>>({})
 
@@ -35,9 +36,10 @@ export const useTracking = (
         visitorId,
         playPositionSeconds,
         articleExternalId,
+        pluginVersion,
       })
     },
-    [apiKey, playSessionId, articleExternalId]
+    [apiKey, playSessionId, articleExternalId, pluginVersion]
   )
 
   return { sendTrackingOnce }

@@ -11,6 +11,7 @@ export interface AudioData {
   postRollAudioId: string | null
   articleAudioId: string | null
   articleExternalId: string
+  pluginVersion: string
 }
 
 export interface PlayerConfig {
@@ -33,6 +34,7 @@ export interface TrackingPayload {
   visitorId: string | null
   playPositionSeconds: number
   articleExternalId?: string
+  pluginVersion?: string
 }
 
 export type AudioStatus =

@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react'
 import { fetchPlayerConfig } from '../lib/api'
 import type { PlayerConfig } from '../types'
 
-export const useConfig = (configEndpoint: string, apiKey: string) => {
+export const useConfig = (
+  configEndpoint: string,
+  apiKey: string,
+  pluginVersion?: string
+) => {
   const [config, setConfig] = useState<PlayerConfig | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    fetchPlayerConfig(configEndpoint, apiKey)
+    fetchPlayerConfig(configEndpoint, apiKey, pluginVersion)
       .then((fetchedConfig) => {
         setConfig(fetchedConfig)
         setIsLoading(false)
@@ -19,7 +23,7 @@ export const useConfig = (configEndpoint: string, apiKey: string) => {
         })
         setIsLoading(false)
       })
-  }, [configEndpoint, apiKey])
+  }, [configEndpoint, apiKey, pluginVersion])
 
   return { config, isLoading }
 }
