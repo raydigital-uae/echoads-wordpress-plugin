@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.4.0...v1.5.0) (2026-07-08)
+
+
+### ✨ Features
+
+* add articleExternalId to audio tracking and player configuration ([df7a702](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/df7a7027a9250ceb0017fe48232e3c0c5fec25b8))
+* **tracking:** fire ad completion tracking event for ad tracks ([267958f](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/267958f81b57e51087d2501cb4b5e88aa265cc00))
+* **tracking:** send pluginVersion with tracking and config requests ([b09f41e](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/b09f41e93b610fb93eeb5fdb31a23306227fc6b5))
+
 ## [1.4.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.3.0...v1.4.0) (2026-03-03)
 
 
