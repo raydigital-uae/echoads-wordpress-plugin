@@ -9,6 +9,10 @@ export const useAudioPlayer = (audioData: AudioData) => {
   const [duration, setDuration] = useState(0)
   const [status, setStatus] = useState('Ready')
   const [fiveSecondTrackingSent, setFiveSecondTrackingSent] = useState(false)
+  const [completedTrack, setCompletedTrack] = useState<{
+    index: number
+    positionSeconds: number
+  } | null>(null)
 
   const tracks: AudioTrack[] = [
     {
@@ -40,6 +44,7 @@ export const useAudioPlayer = (audioData: AudioData) => {
 
       setCurrentTrack(index)
       setFiveSecondTrackingSent(false)
+      setCompletedTrack(null)
       setStatus('Loading...')
 
       audioRef.current.src = tracks[index].url
@@ -102,6 +107,10 @@ export const useAudioPlayer = (audioData: AudioData) => {
     }
 
     const handleEnded = () => {
+      setCompletedTrack({
+        index: currentTrack,
+        positionSeconds: Math.floor(audio.duration || audio.currentTime),
+      })
       if (currentTrack < tracks.length - 1) {
         loadTrack(currentTrack + 1)
         setTimeout(() => {
@@ -166,6 +175,7 @@ export const useAudioPlayer = (audioData: AudioData) => {
     duration,
     status,
     fiveSecondTrackingSent,
+    completedTrack,
     loadTrack,
     play,
     pause,

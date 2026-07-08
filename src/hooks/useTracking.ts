@@ -3,7 +3,12 @@ import { sendTracking } from '../lib/api'
 import { getVisitorId } from '../lib/session'
 import type { AudioTrack } from '../types'
 
-export const useTracking = (apiKey: string, playSessionId: string) => {
+export const useTracking = (
+  apiKey: string,
+  playSessionId: string,
+  articleExternalId?: string,
+  pluginVersion?: string
+) => {
   const trackingSentRef = useRef<Record<string, boolean>>({})
 
   const sendTrackingOnce = useCallback(
@@ -30,9 +35,11 @@ export const useTracking = (apiKey: string, playSessionId: string) => {
         playSessionId,
         visitorId,
         playPositionSeconds,
+        articleExternalId,
+        pluginVersion,
       })
     },
-    [apiKey, playSessionId]
+    [apiKey, playSessionId, articleExternalId, pluginVersion]
   )
 
   return { sendTrackingOnce }

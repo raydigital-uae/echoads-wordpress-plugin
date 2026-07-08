@@ -182,7 +182,9 @@ class EchoAds_Audio_Player
                     configEndpoint: "<?php echo esc_js($config_endpoint); ?>",
                     preRollAudioId: <?php echo isset($audio_data['preRollAudioId']) && $audio_data['preRollAudioId'] !== null ? json_encode($audio_data['preRollAudioId']) : 'null'; ?>,
                     postRollAudioId: <?php echo isset($audio_data['postRollAudioId']) && $audio_data['postRollAudioId'] !== null ? json_encode($audio_data['postRollAudioId']) : 'null'; ?>,
-                    articleAudioId: <?php echo isset($audio_data['articleAudioId']) && $audio_data['articleAudioId'] !== null ? json_encode($audio_data['articleAudioId']) : 'null'; ?>
+                    articleAudioId: <?php echo isset($audio_data['articleAudioId']) && $audio_data['articleAudioId'] !== null ? json_encode($audio_data['articleAudioId']) : 'null'; ?>,
+                    articleExternalId: "<?php echo esc_js(strval($post_id)); ?>",
+                    pluginVersion: "<?php echo esc_js(ECHOADS_PLUGIN_VERSION); ?>"
                 };
 
                 var playerId = "<?php echo esc_js($unique_id); ?>";

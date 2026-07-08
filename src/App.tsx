@@ -22,7 +22,8 @@ export const AudioPlayer = ({ audioData, bgColor }: AudioPlayerProps) => {
 
   const { config, isLoading } = useConfig(
     audioData.configEndpoint,
-    audioData.apiKey
+    audioData.apiKey,
+    audioData.pluginVersion
   )
   const langCode = config?.language?.code || 'en'
   const translations = useTranslations(langCode)
@@ -37,6 +38,7 @@ export const AudioPlayer = ({ audioData, bgColor }: AudioPlayerProps) => {
     duration,
     status,
     fiveSecondTrackingSent,
+    completedTrack,
     loadTrack,
     play,
     pause,
@@ -44,7 +46,12 @@ export const AudioPlayer = ({ audioData, bgColor }: AudioPlayerProps) => {
     setStatus,
   } = useAudioPlayer(audioData)
 
-  const { sendTrackingOnce } = useTracking(audioData.apiKey, playSessionId)
+  const { sendTrackingOnce } = useTracking(
+    audioData.apiKey,
+    playSessionId,
+    audioData.articleExternalId,
+    audioData.pluginVersion
+  )
 
   // Check audio status
   const performStatusCheck = async () => {
@@ -122,6 +129,17 @@ export const AudioPlayer = ({ audioData, bgColor }: AudioPlayerProps) => {
       sendTrackingOnce(tracks[currentTrack], 5, currentTrack)
     }
   }, [fiveSecondTrackingSent, currentTrack, tracks, sendTrackingOnce])
+
+  // Send ad completion tracking
+  useEffect(() => {
+    if (completedTrack && tracks[completedTrack.index]) {
+      sendTrackingOnce(
+        tracks[completedTrack.index],
+        completedTrack.positionSeconds,
+        completedTrack.index
+      )
+    }
+  }, [completedTrack, tracks, sendTrackingOnce])
 
   // Don't render anything until config is loaded
   if (isLoading) {
