@@ -21,6 +21,14 @@ class EchoAds_Audio_Player
             // Only show audio player for posts that have generated audio
             $audio_generated = get_post_meta($post->ID, '_echoads_audio_generated', true);
 
+            // Audio generation is asynchronous: the generated flag is normally set
+            // when an editor clicks "Check Status" in wp-admin. Posts whose audio
+            // was auto-generated on publish never get that click, so self-heal by
+            // polling the backend status here (throttled per post).
+            if (!$audio_generated) {
+                $audio_generated = $this->maybe_mark_audio_generated($post->ID);
+            }
+
             if ($audio_generated) {
                 $audio_player = $this->generate_audio_player($post->ID);
                 // Only append/prepend player if valid audio data was found
@@ -37,6 +45,42 @@ class EchoAds_Audio_Player
         }
 
         return $content;
+    }
+
+    private function maybe_mark_audio_generated($post_id)
+    {
+        $audio_requested = get_post_meta($post_id, '_echoads_audio_requested', true);
+        if (empty($audio_requested)) {
+            return false;
+        }
+
+        $transient_key = 'echoads_status_check_' . $post_id;
+        if (get_transient($transient_key)) {
+            return false;
+        }
+        set_transient($transient_key, 1, 5 * MINUTE_IN_SECONDS);
+
+        $status = EchoAds_Post_Sender::fetch_audio_status($post_id);
+        if ($status === false) {
+            return false;
+        }
+
+        update_post_meta($post_id, '_echoads_audio_status', $status);
+
+        if ($status === 'COMPLETED') {
+            update_post_meta($post_id, '_echoads_audio_generated', current_time('mysql'));
+            delete_transient($transient_key);
+            return true;
+        }
+
+        if ($status === 'FAILED' || $status === 'SKIPPED') {
+            // Terminal states: back off much longer so we don't poll a dead article
+            // on every uncached page view. A regeneration + manual status check in
+            // wp-admin still updates the meta directly, bypassing this throttle.
+            set_transient($transient_key, 1, 6 * HOUR_IN_SECONDS);
+        }
+
+        return false;
     }
 
     public function generate_audio_player($post_id)
