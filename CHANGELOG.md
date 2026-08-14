@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.5.0...v1.5.1) (2026-08-14)
+
+
+### 🐛 Bug Fixes
+
+* self-heal audio-generated flag on frontend render (QA-40) ([15757ef](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/15757ef92773a031d500a0fa5a6c4675b54e78fb))
+
 ## [1.5.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.4.0...v1.5.0) (2026-07-08)
 
 
