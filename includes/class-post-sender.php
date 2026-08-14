@@ -171,7 +171,7 @@ class EchoAds_Post_Sender {
 
         // For regenerate requests, check current status first
         if ( $is_regenerate ) {
-            $current_status = $this->fetch_audio_status( $post_id );
+            $current_status = self::fetch_audio_status( $post_id );
             if ( in_array( $current_status, array( 'PENDING', 'PROCESSING' ), true ) ) {
                 wp_send_json_error( array( 'message' => 'Cannot regenerate while audio is being processed. Current status: ' . $current_status ) );
                 return;
@@ -349,7 +349,7 @@ class EchoAds_Post_Sender {
             return;
         }
 
-        $status_result = $this->fetch_audio_status( $post_id );
+        $status_result = self::fetch_audio_status( $post_id );
 
         if ( $status_result === false ) {
             wp_send_json_error( array( 'message' => 'Failed to fetch audio status' ) );
@@ -370,7 +370,7 @@ class EchoAds_Post_Sender {
         ) );
     }
 
-    private function fetch_audio_status( $post_id ) {
+    public static function fetch_audio_status( $post_id ) {
         $api_key = EchoAds_Settings::get_api_key();
         $endpoint = EchoAds_Settings::get_endpoint();
 
