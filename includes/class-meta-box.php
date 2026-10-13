@@ -26,6 +26,7 @@ class EchoAds_Meta_Box {
         $audio_generated = get_post_meta( $post->ID, '_echoads_audio_generated', true );
         $audio_requested = get_post_meta( $post->ID, '_echoads_audio_requested', true );
         $audio_status = get_post_meta( $post->ID, '_echoads_audio_status', true );
+        $audio_scheduled = get_post_meta( $post->ID, '_echoads_audio_scheduled', true );
         $api_key = EchoAds_Settings::get_api_key();
         $endpoint = EchoAds_Settings::get_endpoint();
 
@@ -39,6 +40,22 @@ class EchoAds_Meta_Box {
                     <p><strong>Configuration Required</strong></p>
                     <p>Please configure API key and endpoint in <a href="<?php echo admin_url( 'options-general.php?page=auto-send-plugin' ); ?>" target="_blank">EchoAds Settings</a>. Audio will be generated automatically when you publish this post.</p>
                 </div>
+            <?php elseif ( $audio_scheduled ) : ?>
+                <?php
+                $send_overdue = ( time() - (int) $audio_scheduled ) > EchoAds_Post_Sender::QUEUED_SEND_OVERDUE_AFTER
+                    || ! wp_next_scheduled( 'echoads_send_post_data', array( $post->ID ) );
+                ?>
+                <div class="echoads-notice <?php echo $send_overdue ? 'echoads-notice-warning' : 'echoads-notice-info'; ?>">
+                    <p><strong>Audio Generation Queued</strong></p>
+                    <?php if ( $send_overdue ) : ?>
+                        <p>This post hasn't been sent to EchoAds yet. WordPress scheduled tasks (WP-Cron) don't seem to be running on this site, so queued posts are sent when an editor opens wp-admin. You can also send it now.</p>
+                    <?php else : ?>
+                        <p>This post will be sent to EchoAds for audio generation shortly.</p>
+                    <?php endif; ?>
+                </div>
+                <button type="button" id="echoads-generate-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="width: 100%;">
+                    Send to EchoAds Now
+                </button>
             <?php elseif ( $audio_requested && ( $audio_status === 'PENDING' || $audio_status === 'PROCESSING' ) ) : ?>
                 <div class="echoads-notice echoads-notice-info">
                     <p><strong>Audio Generation In Progress</strong></p>
@@ -88,6 +105,14 @@ class EchoAds_Meta_Box {
                         </button>
                     <?php endif; ?>
                 <?php endif; ?>
+            <?php elseif ( $post->post_status === 'publish' && ! $audio_generated ) : // Never sent, e.g. published before the plugin was configured. ?>
+                <div class="echoads-notice echoads-notice-info">
+                    <p><strong>Audio Generation</strong></p>
+                    <p>Audio hasn't been generated for this post yet.</p>
+                </div>
+                <button type="button" id="echoads-generate-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="width: 100%;">
+                    Generate Audio
+                </button>
             <?php else : ?>
                 <div class="echoads-notice echoads-notice-info">
                     <p><strong>Audio Generation</strong></p>
@@ -150,14 +175,14 @@ class EchoAds_Meta_Box {
             margin-bottom: 0;
         }
 
-        #echoads-check-status-btn, #echoads-preview-btn, #echoads-regenerate-btn {
+        #echoads-check-status-btn, #echoads-preview-btn, #echoads-regenerate-btn, #echoads-generate-btn {
             width: 100%;
             padding: 8px 12px;
             font-size: 13px;
             margin-bottom: 12px;
         }
 
-        #echoads-check-status-btn:disabled, #echoads-preview-btn:disabled, #echoads-regenerate-btn:disabled {
+        #echoads-check-status-btn:disabled, #echoads-preview-btn:disabled, #echoads-regenerate-btn:disabled, #echoads-generate-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
         }
@@ -458,17 +483,19 @@ class EchoAds_Meta_Box {
                 });
             });
 
-            // Regenerate Audio button handler
-            $(document).on('click', '#echoads-regenerate-btn', function(e) {
+            // Regenerate Audio / Generate Audio (send now) button handler
+            $(document).on('click', '#echoads-regenerate-btn, #echoads-generate-btn', function(e) {
                 e.preventDefault();
 
                 var button = $(this);
                 var postId = button.data('post-id');
                 var responseDiv = $('#echoads-response-message');
+                var isRegenerate = button.is('#echoads-regenerate-btn');
+                var label = button.text();
 
                 // Update button state
                 button.prop('disabled', true);
-                button.text('Regenerating...');
+                button.text(isRegenerate ? 'Regenerating...' : 'Sending...');
                 responseDiv.hide().removeClass('success error').empty();
 
                 $.ajax({
@@ -477,17 +504,18 @@ class EchoAds_Meta_Box {
                     data: {
                         action: 'echoads_generate_audio',
                         post_id: postId,
-                        regenerate: 'true',
+                        regenerate: isRegenerate ? 'true' : 'false',
                         nonce: echoads_ajax.nonce
                     },
                     success: function(response) {
                         if (response.success) {
                             // Immediately update UI to show pending/processing state
                             var metaBox = $('#echoads-meta-box');
-                            
-                            // Hide preview and regenerate buttons
+
+                            // Hide preview, regenerate and generate buttons
                             $('#echoads-preview-btn').hide();
                             $('#echoads-regenerate-btn').hide();
+                            $('#echoads-generate-btn').hide();
                             
                             // Create or show check status button
                             var checkStatusBtn = $('#echoads-check-status-btn');
@@ -509,7 +537,7 @@ class EchoAds_Meta_Box {
                                 metaBox.prepend(noticeHtml);
                             }
                             
-                            responseDiv.addClass('success').html('<strong>Audio Regeneration Initiated</strong><br>' + (response.data.message || 'Audio generation has been started. Please check the status to see when it completes.')).show();
+                            responseDiv.addClass('success').html('<strong>' + (isRegenerate ? 'Audio Regeneration Initiated' : 'Audio Generation Initiated') + '</strong><br>' + (response.data.message || 'Audio generation has been started. Please check the status to see when it completes.')).show();
                             
                             // Reload as fallback to sync with server state (longer delay since UI is already updated)
                             setTimeout(function() {
@@ -522,7 +550,7 @@ class EchoAds_Meta_Box {
                             
                             // Reset button state
                             button.prop('disabled', false);
-                            button.text('Regenerate Audio');
+                            button.text(label);
                         }
                     },
                     error: function(xhr, status, error) {
@@ -549,7 +577,7 @@ class EchoAds_Meta_Box {
                         
                         // Reset button state
                         button.prop('disabled', false);
-                        button.text('Regenerate Audio');
+                        button.text(label);
                     }
                 });
             });
