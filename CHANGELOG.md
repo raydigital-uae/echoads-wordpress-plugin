@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.2](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.5.1...v1.5.2) (2026-10-13)
+
+
+### 🐛 Bug Fixes
+
+* resolve caching in player & audit fixes ([9983f06](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/9983f06ae952b5748bd96675312e85311bc06198))
+* resolve caching in player & audit fixes ([22a2382](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/22a2382434146ea104c86263ad4d50b69ab7ce01))
+
 ## [1.5.1](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.5.0...v1.5.1) (2026-08-14)
 
 
