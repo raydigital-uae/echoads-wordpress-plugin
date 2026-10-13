@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.3](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.5.2...v1.5.3) (2026-10-13)
+
+
+### 🐛 Bug Fixes
+
+* send queued posts when WP-Cron can't run ([9a1ba81](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/9a1ba814f729f78368c04b6e0d308a94b2bf41ff))
+* send queued posts when WP-Cron can't run ([e83f053](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/e83f05390f4c1ea8ecac0339f2a0b29b9a6ed6a4))
+
 ## [1.5.2](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.5.1...v1.5.2) (2026-10-13)
 
 
