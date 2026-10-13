@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import type { AudioData, AudioTrack } from '../types'
 
 export const useAudioPlayer = (audioData: AudioData) => {
@@ -14,29 +14,33 @@ export const useAudioPlayer = (audioData: AudioData) => {
     positionSeconds: number
   } | null>(null)
 
-  const tracks: AudioTrack[] = [
-    {
-      url: audioData.preRoll,
-      name: 'Pre-Roll Ad',
-      trackingUrl: audioData.prerollTrackingUrl,
-      campaignAudioId: audioData.preRollAudioId,
-      allowSeeking: false,
-    },
-    {
-      url: audioData.article,
-      name: 'Article Audio',
-      trackingUrl: null,
-      campaignAudioId: audioData.articleAudioId,
-      allowSeeking: true,
-    },
-    {
-      url: audioData.postRoll,
-      name: 'Post-Roll Ad',
-      trackingUrl: audioData.postrollTrackingUrl,
-      campaignAudioId: audioData.postRollAudioId,
-      allowSeeking: false,
-    },
-  ].filter((track) => track.url)
+  const tracks: AudioTrack[] = useMemo(
+    () =>
+      [
+        {
+          url: audioData.preRoll,
+          name: 'Pre-Roll Ad',
+          trackingUrl: audioData.prerollTrackingUrl,
+          campaignAudioId: audioData.preRollAudioId,
+          allowSeeking: false,
+        },
+        {
+          url: audioData.article,
+          name: 'Article Audio',
+          trackingUrl: null,
+          campaignAudioId: audioData.articleAudioId,
+          allowSeeking: true,
+        },
+        {
+          url: audioData.postRoll,
+          name: 'Post-Roll Ad',
+          trackingUrl: audioData.postrollTrackingUrl,
+          campaignAudioId: audioData.postRollAudioId,
+          allowSeeking: false,
+        },
+      ].filter((track) => track.url),
+    [audioData]
+  )
 
   const loadTrack = useCallback(
     (index: number) => {
@@ -44,7 +48,6 @@ export const useAudioPlayer = (audioData: AudioData) => {
 
       setCurrentTrack(index)
       setFiveSecondTrackingSent(false)
-      setCompletedTrack(null)
       setStatus('Loading...')
 
       audioRef.current.src = tracks[index].url
@@ -117,6 +120,13 @@ export const useAudioPlayer = (audioData: AudioData) => {
           play()
         }, 100)
       } else {
+        // Rewind to the article so pressing play again doesn't replay the post-roll ad
+        loadTrack(
+          Math.max(
+            0,
+            tracks.findIndex((track) => track.allowSeeking)
+          )
+        )
         setIsPlaying(false)
         setStatus('Finished')
         setCurrentTime(0)
@@ -134,8 +144,17 @@ export const useAudioPlayer = (audioData: AudioData) => {
     }
 
     const handleError = () => {
-      setStatus('Error')
       console.error('Audio error:', audio.error)
+      // A broken ad (e.g. deleted campaign audio) must not block the article: skip to the next track
+      if (
+        !tracks[currentTrack]?.allowSeeking &&
+        currentTrack < tracks.length - 1
+      ) {
+        loadTrack(currentTrack + 1)
+        play()
+        return
+      }
+      setStatus('Error')
     }
 
     audio.addEventListener('loadedmetadata', handleLoadedMetadata)
@@ -157,14 +176,7 @@ export const useAudioPlayer = (audioData: AudioData) => {
       audio.removeEventListener('canplay', handleCanPlay)
       audio.removeEventListener('error', handleError)
     }
-  }, [
-    currentTrack,
-    tracks.length,
-    loadTrack,
-    play,
-    isPlaying,
-    fiveSecondTrackingSent,
-  ])
+  }, [currentTrack, tracks, loadTrack, play, isPlaying, fiveSecondTrackingSent])
 
   return {
     audioRef,

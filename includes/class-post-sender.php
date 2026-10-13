@@ -11,6 +11,7 @@ class EchoAds_Post_Sender {
         add_action( 'wp_ajax_echoads_check_audio_status', array( $this, 'handle_ajax_check_status' ) );
         add_action( 'wp_ajax_echoads_get_preview_audio', array( $this, 'handle_ajax_get_preview_audio' ) );
         add_action( 'transition_post_status', array( $this, 'handle_post_publish' ), 10, 3 );
+        add_action( 'echoads_send_post_data', array( $this, 'send_post_data' ) );
     }
 
     public function send_post_data( $post_id ) {
@@ -42,7 +43,11 @@ class EchoAds_Post_Sender {
         update_post_meta( $post_id, '_echoads_audio_requested', current_time( 'mysql' ) );
         update_post_meta( $post_id, '_echoads_audio_status', 'PENDING' );
 
-        $this->send_request( $endpoint, $api_key, $dto, $post_id );
+        $result = $this->send_request_sync( $endpoint, $api_key, $dto, $post_id );
+        if ( ! $result['success'] ) {
+            // Lets the editor see the failure and regenerate, instead of the post sitting in PENDING forever.
+            update_post_meta( $post_id, '_echoads_audio_status', 'FAILED' );
+        }
     }
 
     private function prepare_post_dto( $post_id, $post ) {
@@ -112,43 +117,6 @@ class EchoAds_Post_Sender {
         }
 
         return $permalink;
-    }
-
-    private function send_request( $endpoint, $api_key, $dto, $post_id ) {
-        $body = wp_json_encode( $dto );
-        
-        error_log( 'EchoAds Plugin: Sending DTO for post ' . $post_id . ': ' . $body );
-
-        if ( json_last_error() !== JSON_ERROR_NONE ) {
-            error_log( 'EchoAds Plugin: JSON encoding error: ' . json_last_error_msg() );
-            return;
-        }
-
-        $args = array(
-            'headers' => array(
-                'Content-Type' => 'application/json',
-                'x-api-key' => $api_key
-            ),
-            'body' => $body,
-            'data_format' => 'body',
-            'method' => 'POST',
-            'timeout' => EchoAds_Settings::get_timeout(),
-        );
-
-        $response = wp_remote_post( $endpoint, $args );
-
-        if ( is_wp_error( $response ) ) {
-            error_log( 'EchoAds Plugin: Error sending post data to ' . $endpoint . ': ' . $response->get_error_message() );
-        } else {
-            $response_code = wp_remote_retrieve_response_code( $response );
-            $response_body = wp_remote_retrieve_body( $response );
-            
-            if ( $response_code >= 200 && $response_code < 300 ) {
-                error_log( 'EchoAds Plugin: Successfully sent post data. Response code: ' . $response_code );
-            } else {
-                error_log( 'EchoAds Plugin: Failed to send post data. Response code: ' . $response_code . ', Body: ' . $response_body );
-            }
-        }
     }
 
     public function handle_ajax_generate_audio() {
@@ -443,8 +411,9 @@ class EchoAds_Post_Sender {
             return;
         }
 
-        error_log( 'EchoAds Plugin: Auto-generating audio for published post ' . $post->ID );
-        $this->send_post_data( $post->ID );
+        // Sent from WP-cron so publishing (and bulk publishing) doesn't wait on the backend.
+        error_log( 'EchoAds Plugin: Scheduling audio generation for published post ' . $post->ID );
+        wp_schedule_single_event( time(), 'echoads_send_post_data', array( $post->ID ) );
     }
 
     public function handle_ajax_get_preview_audio() {
@@ -477,7 +446,7 @@ class EchoAds_Post_Sender {
             return;
         }
 
-        $audio_data = $this->fetch_audio_data_for_preview( $audio_endpoint, $api_key, $post_id );
+        $audio_data = EchoAds_Audio_Player::fetch_audio_data( $audio_endpoint, $api_key, $post_id );
 
         if ( ! $audio_data || empty( $audio_data['article'] ) ) {
             wp_send_json_error( array( 'message' => 'Audio article URL not available' ) );
@@ -488,67 +457,5 @@ class EchoAds_Post_Sender {
             'audioUrl' => $audio_data['article'],
             'message' => 'Audio URL retrieved successfully'
         ) );
-    }
-
-    private function fetch_audio_data_for_preview( $audio_endpoint, $api_key, $post_id ) {
-        // Add externalId query parameter to the endpoint URL
-        $audio_endpoint = add_query_arg( 'externalId', strval( $post_id ), $audio_endpoint );
-
-        $args = array(
-            'headers' => array(
-                'x-api-key' => $api_key
-            ),
-            'timeout' => 30
-        );
-
-        $response = wp_remote_get( $audio_endpoint, $args );
-
-        if ( is_wp_error( $response ) ) {
-            error_log( 'EchoAds Plugin: Error fetching audio data for preview: ' . $response->get_error_message() );
-            return false;
-        }
-
-        $body = wp_remote_retrieve_body( $response );
-        $audio_info = json_decode( $body, true );
-
-        if ( ! $audio_info ) {
-            error_log( 'EchoAds Plugin: Invalid JSON response when fetching audio for preview: ' . $body );
-            return false;
-        }
-
-        return $this->parse_audio_response_for_preview( $audio_info, $body );
-    }
-
-    private function parse_audio_response_for_preview( $audio_info, $raw_body ) {
-        $article_audio_link = null;
-
-        $audio_urls = null;
-
-        if ( isset( $audio_info['success'] ) && $audio_info['success'] === true && isset( $audio_info['data'] ) ) {
-            if ( isset( $audio_info['data']['audioUrls'] ) ) {
-                $audio_urls = $audio_info['data']['audioUrls'];
-            } else {
-                $audio_urls = $audio_info['data'];
-            }
-        } elseif ( isset( $audio_info['audioUrls'] ) ) {
-            $audio_urls = $audio_info['audioUrls'];
-        } elseif ( isset( $audio_info['articleAudioLink'] ) ) {
-            $audio_urls = $audio_info;
-        } else {
-            error_log( 'EchoAds Plugin: Unrecognized audio response format for preview: ' . $raw_body );
-            return false;
-        }
-
-        if ( $audio_urls ) {
-            $article_audio_link = isset( $audio_urls['articleAudioLink'] ) ? $audio_urls['articleAudioLink'] : null;
-        }
-
-        if ( ! $article_audio_link ) {
-            return false;
-        }
-
-        return array(
-            'article' => $article_audio_link
-        );
     }
 }

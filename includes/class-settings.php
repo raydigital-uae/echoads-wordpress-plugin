@@ -490,16 +490,7 @@ class EchoAds_Settings
         return trailingslashit($base_url) . 'website-articles/audio-urls';
     }
 
-    public static function get_preroll_tracking_endpoint()
-    {
-        $base_url = self::get_base_url_with_protocol();
-        if (empty($base_url)) {
-            return '';
-        }
-        return trailingslashit($base_url) . 'website-articles/track';
-    }
-
-    public static function get_postroll_tracking_endpoint()
+    public static function get_tracking_endpoint()
     {
         $base_url = self::get_base_url_with_protocol();
         if (empty($base_url)) {

@@ -4,6 +4,7 @@ import { PlayerControls } from './components/PlayerControls'
 import { useConfig } from './hooks/useConfig'
 import { useTranslations } from './hooks/useTranslations'
 import { useAudioPlayer } from './hooks/useAudioPlayer'
+import { useAudioUrls } from './hooks/useAudioUrls'
 import { useTracking } from './hooks/useTracking'
 import { getOrCreatePlaySessionId } from './lib/session'
 import { checkAudioStatus } from './lib/api'
@@ -25,6 +26,8 @@ export const AudioPlayer = ({ audioData, bgColor }: AudioPlayerProps) => {
     audioData.apiKey,
     audioData.pluginVersion
   )
+  const { audioData: resolvedAudioData, isLoading: isAudioUrlsLoading } =
+    useAudioUrls(audioData)
   const langCode = config?.language?.code || 'en'
   const translations = useTranslations(langCode)
   const isRtl = langCode.toLowerCase() === 'ar'
@@ -44,7 +47,7 @@ export const AudioPlayer = ({ audioData, bgColor }: AudioPlayerProps) => {
     pause,
     seek,
     setStatus,
-  } = useAudioPlayer(audioData)
+  } = useAudioPlayer(resolvedAudioData)
 
   const { sendTrackingOnce } = useTracking(
     audioData.apiKey,
@@ -141,8 +144,8 @@ export const AudioPlayer = ({ audioData, bgColor }: AudioPlayerProps) => {
     }
   }, [completedTrack, tracks, sendTrackingOnce])
 
-  // Don't render anything until config is loaded
-  if (isLoading) {
+  // Don't render anything until config and the per-visitor ad are resolved
+  if (isLoading || isAudioUrlsLoading) {
     return null
   }
 
