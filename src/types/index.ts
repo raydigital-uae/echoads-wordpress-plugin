@@ -7,6 +7,7 @@ export interface AudioData {
   apiKey: string
   statusEndpoint: string
   configEndpoint: string
+  audioUrlsEndpoint?: string
   preRollAudioId: string | null
   postRollAudioId: string | null
   articleAudioId: string | null

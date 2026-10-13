@@ -23,6 +23,11 @@
       "type": "generic",
       "path": "echoads-posts-plugin.php",
       "glob": false
+    },
+    {
+      "type": "json",
+      "path": "package.json",
+      "jsonpath": "$.version"
     }
   ],
   "packages": {

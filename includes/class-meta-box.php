@@ -30,9 +30,6 @@ class EchoAds_Meta_Box {
         $endpoint = EchoAds_Settings::get_endpoint();
 
         $has_config = ! empty( $api_key ) && ! empty( $endpoint );
-        $post_status = isset( $post->post_status ) ? $post->post_status : '';
-        $is_valid_status = in_array( $post_status, array( 'draft', 'publish' ), true );
-        $post_permalink = get_permalink( $post->ID );
 
         wp_nonce_field( 'echoads_generate_audio', 'echoads_generate_audio_nonce' );
         ?>
@@ -242,14 +239,9 @@ class EchoAds_Meta_Box {
 
             wp_add_inline_script( 'jquery', $this->get_meta_box_script() );
 
-            $post_status = isset( $post->post_status ) ? $post->post_status : '';
-            $is_valid_status = in_array( $post_status, array( 'draft', 'publish' ), true );
-
             wp_localize_script( 'jquery', 'echoads_ajax', array(
                 'ajax_url' => admin_url( 'admin-ajax.php' ),
-                'nonce' => wp_create_nonce( 'echoads_generate_audio' ),
-                'post_status' => $post_status,
-                'is_valid_status' => $is_valid_status
+                'nonce' => wp_create_nonce( 'echoads_generate_audio' )
             ) );
         }
     }
@@ -257,16 +249,35 @@ class EchoAds_Meta_Box {
     private function get_meta_box_script() {
         return "
         jQuery(document).ready(function($) {
+            // Error fields can echo backend/post content, so escape before inserting as HTML.
+            function esc(value) {
+                return $('<div>').text(value == null ? '' : String(value)).html();
+            }
+
+            // One delegated handler for every error box's Show/Hide Details link.
+            $(document).on('click', '#echoads-response-message .echoads-toggle-details', function(e) {
+                e.preventDefault();
+                var detailsDiv = $('#echoads-response-message .echoads-error-details');
+                var toggleLink = $(this);
+                if (detailsDiv.is(':visible')) {
+                    detailsDiv.slideUp();
+                    toggleLink.text('Show Details');
+                } else {
+                    detailsDiv.slideDown();
+                    toggleLink.text('Hide Details');
+                }
+            });
+
             function formatErrorDetails(errorData) {
                 var html = '<div class=\"echoads-error-summary\">';
-                html += '<strong>' + (errorData.message || 'An error occurred') + '</strong>';
+                html += '<strong>' + esc(errorData.message || 'An error occurred') + '</strong>';
                 
                 if (errorData.response_code !== null && errorData.response_code !== undefined) {
-                    html += '<br><span class=\"echoads-error-code\">HTTP Status: ' + errorData.response_code + '</span>';
+                    html += '<br><span class=\"echoads-error-code\">HTTP Status: ' + esc(errorData.response_code) + '</span>';
                 }
                 
                 if (errorData.error_message) {
-                    html += '<br><span class=\"echoads-error-message\">' + errorData.error_message + '</span>';
+                    html += '<br><span class=\"echoads-error-message\">' + esc(errorData.error_message) + '</span>';
                 }
                 
                 html += '<br><a href=\"#\" class=\"echoads-toggle-details\">Show Details</a>';
@@ -275,16 +286,16 @@ class EchoAds_Meta_Box {
                 html += '<div class=\"echoads-error-details\" style=\"display: none; margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 4px; font-size: 11px; max-height: 400px; overflow-y: auto;\">';
                 
                 if (errorData.response_code !== null && errorData.response_code !== undefined) {
-                    html += '<div style=\"margin-bottom: 8px;\"><strong>Response Code:</strong> ' + errorData.response_code + '</div>';
+                    html += '<div style=\"margin-bottom: 8px;\"><strong>Response Code:</strong> ' + esc(errorData.response_code) + '</div>';
                 }
                 
                 if (errorData.response_body) {
                     html += '<div style=\"margin-bottom: 8px;\"><strong>Response Body:</strong>';
                     html += '<pre style=\"white-space: pre-wrap; word-wrap: break-word; background: rgba(0,0,0,0.05); padding: 8px; border-radius: 3px; margin-top: 4px; max-height: 200px; overflow-y: auto;\">';
                     if (errorData.response_body_parsed) {
-                        html += JSON.stringify(errorData.response_body_parsed, null, 2);
+                        html += esc(JSON.stringify(errorData.response_body_parsed, null, 2));
                     } else {
-                        html += $('<div>').text(errorData.response_body).html();
+                        html += esc(errorData.response_body);
                     }
                     html += '</pre></div>';
                 }
@@ -292,12 +303,12 @@ class EchoAds_Meta_Box {
                 if (errorData.response_headers && Object.keys(errorData.response_headers).length > 0) {
                     html += '<div style=\"margin-bottom: 8px;\"><strong>Response Headers:</strong>';
                     html += '<pre style=\"white-space: pre-wrap; word-wrap: break-word; background: rgba(0,0,0,0.05); padding: 8px; border-radius: 3px; margin-top: 4px; max-height: 150px; overflow-y: auto;\">';
-                    html += JSON.stringify(errorData.response_headers, null, 2);
+                    html += esc(JSON.stringify(errorData.response_headers, null, 2));
                     html += '</pre></div>';
                 }
                 
                 if (errorData.error_message) {
-                    html += '<div style=\"margin-bottom: 8px;\"><strong>Error Message:</strong> ' + errorData.error_message + '</div>';
+                    html += '<div style=\"margin-bottom: 8px;\"><strong>Error Message:</strong> ' + esc(errorData.error_message) + '</div>';
                 }
                 
                 html += '</div>';
@@ -341,20 +352,6 @@ class EchoAds_Meta_Box {
                             var errorHtml = formatErrorDetails(response.data || {});
                             responseDiv.html(errorHtml).show();
                             
-                            // Toggle details
-                            responseDiv.find('.echoads-toggle-details').click(function(e) {
-                                e.preventDefault();
-                                var detailsDiv = responseDiv.find('.echoads-error-details');
-                                var toggleLink = $(this);
-                                if (detailsDiv.is(':visible')) {
-                                    detailsDiv.slideUp();
-                                    toggleLink.text('Show Details');
-                                } else {
-                                    detailsDiv.slideDown();
-                                    toggleLink.text('Hide Details');
-                                }
-                            });
-                            
                             // Reset button state
                             button.prop('disabled', false);
                             button.html('<span class=\"echoads-btn-icon\">🎧</span> Preview Audio Article Track');
@@ -381,20 +378,6 @@ class EchoAds_Meta_Box {
                         responseDiv.addClass('error');
                         var errorHtml = formatErrorDetails(errorData);
                         responseDiv.html(errorHtml).show();
-                        
-                        // Toggle details
-                        responseDiv.find('.echoads-toggle-details').click(function(e) {
-                            e.preventDefault();
-                            var detailsDiv = responseDiv.find('.echoads-error-details');
-                            var toggleLink = $(this);
-                            if (detailsDiv.is(':visible')) {
-                                detailsDiv.slideUp();
-                                toggleLink.text('Show Details');
-                            } else {
-                                detailsDiv.slideDown();
-                                toggleLink.text('Hide Details');
-                            }
-                        });
                         
                         // Reset button state
                         button.prop('disabled', false);
@@ -537,20 +520,6 @@ class EchoAds_Meta_Box {
                             var errorHtml = formatErrorDetails(response.data || {});
                             responseDiv.html(errorHtml).show();
                             
-                            // Toggle details
-                            responseDiv.find('.echoads-toggle-details').click(function(e) {
-                                e.preventDefault();
-                                var detailsDiv = responseDiv.find('.echoads-error-details');
-                                var toggleLink = $(this);
-                                if (detailsDiv.is(':visible')) {
-                                    detailsDiv.slideUp();
-                                    toggleLink.text('Show Details');
-                                } else {
-                                    detailsDiv.slideDown();
-                                    toggleLink.text('Hide Details');
-                                }
-                            });
-                            
                             // Reset button state
                             button.prop('disabled', false);
                             button.text('Regenerate Audio');
@@ -577,20 +546,6 @@ class EchoAds_Meta_Box {
                         responseDiv.addClass('error');
                         var errorHtml = formatErrorDetails(errorData);
                         responseDiv.html(errorHtml).show();
-                        
-                        // Toggle details
-                        responseDiv.find('.echoads-toggle-details').click(function(e) {
-                            e.preventDefault();
-                            var detailsDiv = responseDiv.find('.echoads-error-details');
-                            var toggleLink = $(this);
-                            if (detailsDiv.is(':visible')) {
-                                detailsDiv.slideUp();
-                                toggleLink.text('Show Details');
-                            } else {
-                                detailsDiv.slideDown();
-                                toggleLink.text('Hide Details');
-                            }
-                        });
                         
                         // Reset button state
                         button.prop('disabled', false);
