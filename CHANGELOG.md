@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.5.3...v1.6.0) (2026-10-13)
+
+
+### ✨ Features
+
+* report which ad slot (intro/outro) a tracked play belongs to ([c77d18a](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/c77d18aed654cf10a099f30c15519d7c9532e262))
+* report which ad slot (intro/outro) a tracked play belongs to ([a404ec1](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/a404ec14cb6b6d1e2107df6caaa3af3d72408403))
+
 ## [1.5.3](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.5.2...v1.5.3) (2026-10-13)
 
 
