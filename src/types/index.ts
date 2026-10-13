@@ -21,12 +21,15 @@ export interface PlayerConfig {
   }
 }
 
+export type AdSlot = 'INTRO' | 'OUTRO'
+
 export interface AudioTrack {
   url: string
   name: string
   trackingUrl: string | null
   campaignAudioId: string | null
   allowSeeking: boolean
+  adSlot?: AdSlot
 }
 
 export interface TrackingPayload {
@@ -36,6 +39,8 @@ export interface TrackingPayload {
   playPositionSeconds: number
   articleExternalId?: string
   pluginVersion?: string
+  // Lets the backend tell intro from outro plays of the default (house) ad, which have no campaignAudioId.
+  adSlot?: AdSlot
 }
 
 export type AudioStatus =

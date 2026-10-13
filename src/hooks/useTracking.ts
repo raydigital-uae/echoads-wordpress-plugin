@@ -37,6 +37,7 @@ export const useTracking = (
         playPositionSeconds,
         articleExternalId,
         pluginVersion,
+        adSlot: track.adSlot,
       })
     },
     [apiKey, playSessionId, articleExternalId, pluginVersion]

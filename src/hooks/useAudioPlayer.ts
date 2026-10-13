@@ -23,6 +23,7 @@ export const useAudioPlayer = (audioData: AudioData) => {
           trackingUrl: audioData.prerollTrackingUrl,
           campaignAudioId: audioData.preRollAudioId,
           allowSeeking: false,
+          adSlot: 'INTRO' as const,
         },
         {
           url: audioData.article,
@@ -37,6 +38,7 @@ export const useAudioPlayer = (audioData: AudioData) => {
           trackingUrl: audioData.postrollTrackingUrl,
           campaignAudioId: audioData.postRollAudioId,
           allowSeeking: false,
+          adSlot: 'OUTRO' as const,
         },
       ].filter((track) => track.url),
     [audioData]
