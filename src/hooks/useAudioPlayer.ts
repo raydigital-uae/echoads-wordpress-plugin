@@ -194,6 +194,5 @@ export const useAudioPlayer = (audioData: AudioData) => {
     play,
     pause,
     seek,
-    setStatus,
   }
 }

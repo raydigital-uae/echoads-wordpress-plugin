@@ -7,7 +7,6 @@ import { useAudioPlayer } from './hooks/useAudioPlayer'
 import { useAudioUrls } from './hooks/useAudioUrls'
 import { useTracking } from './hooks/useTracking'
 import { getOrCreatePlaySessionId } from './lib/session'
-import { checkAudioStatus } from './lib/api'
 import type { AudioData } from './types'
 
 interface AudioPlayerProps {
@@ -18,8 +17,6 @@ interface AudioPlayerProps {
 export const AudioPlayer = ({ audioData, bgColor }: AudioPlayerProps) => {
   const [showPlayer, setShowPlayer] = useState(false)
   const [playSessionId] = useState(() => getOrCreatePlaySessionId())
-  const [statusChecked, setStatusChecked] = useState(false)
-  const [canPlay, setCanPlay] = useState(false)
 
   const { config, isLoading } = useConfig(
     audioData.configEndpoint,
@@ -46,7 +43,6 @@ export const AudioPlayer = ({ audioData, bgColor }: AudioPlayerProps) => {
     play,
     pause,
     seek,
-    setStatus,
   } = useAudioPlayer(resolvedAudioData)
 
   const { sendTrackingOnce } = useTracking(
@@ -56,58 +52,13 @@ export const AudioPlayer = ({ audioData, bgColor }: AudioPlayerProps) => {
     audioData.pluginVersion
   )
 
-  // Check audio status
-  const performStatusCheck = async () => {
-    if (statusChecked) return canPlay
-
-    setStatus('Checking status...')
-    const result = await checkAudioStatus(
-      audioData.statusEndpoint,
-      audioData.apiKey
-    )
-    setStatusChecked(true)
-    setCanPlay(result.canPlay)
-
-    if (result.canPlay) {
-      setStatus('Ready')
-    } else {
-      const status = result.status
-      if (status === 'PENDING' || status === 'PROCESSING') {
-        setStatus('Audio is being generated...')
-      } else if (status === 'FAILED' || status === 'SKIPPED') {
-        setStatus(`Audio generation ${status.toLowerCase()}`)
-      } else {
-        setStatus('Audio not ready')
-      }
-    }
-
-    return result.canPlay
-  }
-
-  // Handle listen button click
-  const handleListenClick = async () => {
+  // play() must run synchronously in the click: browsers (Safari especially) block it after an await.
+  const handleListenClick = () => {
     setShowPlayer(true)
-
-    const canPlayAudio = await performStatusCheck()
-    if (canPlayAudio && tracks.length > 0) {
-      if (!audioRef.current?.src) {
-        loadTrack(0)
-      }
-
-      // Wait for audio to be ready before playing
-      const audio = audioRef.current
-      if (audio) {
-        if (audio.readyState >= 2) {
-          play()
-        } else {
-          const onCanPlay = () => {
-            audio.removeEventListener('canplay', onCanPlay)
-            play()
-          }
-          audio.addEventListener('canplay', onCanPlay)
-        }
-      }
+    if (!audioRef.current?.src) {
+      loadTrack(0)
     }
+    play()
   }
 
   // Handle play/pause toggle
@@ -144,14 +95,13 @@ export const AudioPlayer = ({ audioData, bgColor }: AudioPlayerProps) => {
     }
   }, [completedTrack, tracks, sendTrackingOnce])
 
-  // Don't render anything until config and the per-visitor ad are resolved
-  if (isLoading || isAudioUrlsLoading) {
-    return null
-  }
+  // Hide (not unmount) until resolved: <audio> must exist from mount so useAudioPlayer attaches its listeners.
+  const isReady =
+    !isLoading && !isAudioUrlsLoading && !!resolvedAudioData.article
 
   return (
     <div
-      className={`echoads-player-wrapper ${isRtl ? 'echoads-rtl' : ''}`}
+      className={`echoads-player-wrapper ${isRtl ? 'echoads-rtl' : ''} ${isReady ? '' : 'echoads-hidden'}`}
       dir={isRtl ? 'rtl' : 'ltr'}
     >
       {!showPlayer && (
