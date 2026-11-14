@@ -3,7 +3,7 @@ import { fetchAudioUrls } from '../lib/api'
 import { getVisitorId } from '../lib/session'
 import type { AudioData } from '../types'
 
-// Replaces the server-rendered ad with a fresh per-visitor one; keeps the rendered values on failure.
+// Fetches the per-visitor ad and article links; on failure they stay empty and the player stays hidden.
 export const useAudioUrls = (renderedAudioData: AudioData) => {
   const endpoint = renderedAudioData.audioUrlsEndpoint
   const [audioData, setAudioData] = useState(renderedAudioData)

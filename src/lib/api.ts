@@ -1,7 +1,6 @@
 import type {
   AudioData,
   PlayerConfig,
-  StatusResponse,
   TrackingPayload,
 } from '../types'
 
@@ -57,8 +56,8 @@ export type AudioUrls = Pick<
   | 'articleAudioId'
 >
 
-// Resolved in the browser so a page cache can't pin a stale/deleted campaign.
-// Returns null on any failure so the caller falls back to the server-rendered values.
+// Resolved in the browser on every load so no cache can pin a stale/deleted campaign.
+// Returns null on any failure.
 export const fetchAudioUrls = async (
   audioUrlsEndpoint: string,
   apiKey: string,
@@ -103,47 +102,6 @@ export const fetchAudioUrls = async (
   } catch (error) {
     console.error('Error fetching audio URLs, using rendered fallback:', error)
     return null
-  }
-}
-
-export const checkAudioStatus = async (
-  statusEndpoint: string,
-  apiKey: string
-): Promise<{ canPlay: boolean; status: string }> => {
-  if (!statusEndpoint || !apiKey) {
-    return { canPlay: true, status: 'COMPLETED' }
-  }
-
-  try {
-    const response = await fetch(statusEndpoint, {
-      method: 'GET',
-      headers: {
-        'x-api-key': apiKey,
-      },
-      signal: AbortSignal.timeout(10000),
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const json: StatusResponse = await response.json()
-
-    let status = null
-    if (json.success && json.data && json.data.audioStatus) {
-      status = json.data.audioStatus
-    } else if (json.audioStatus) {
-      status = json.audioStatus
-    }
-
-    if (status === 'COMPLETED') {
-      return { canPlay: true, status: 'COMPLETED' }
-    } else {
-      return { canPlay: false, status: status || 'Unknown' }
-    }
-  } catch (error) {
-    console.error('Error checking audio status:', error)
-    return { canPlay: true, status: 'Error' }
   }
 }
 

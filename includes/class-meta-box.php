@@ -26,7 +26,6 @@ class EchoAds_Meta_Box {
         $audio_generated = get_post_meta( $post->ID, '_echoads_audio_generated', true );
         $audio_requested = get_post_meta( $post->ID, '_echoads_audio_requested', true );
         $audio_status = get_post_meta( $post->ID, '_echoads_audio_status', true );
-        $audio_scheduled = get_post_meta( $post->ID, '_echoads_audio_scheduled', true );
         $api_key = EchoAds_Settings::get_api_key();
         $endpoint = EchoAds_Settings::get_endpoint();
 
@@ -40,29 +39,13 @@ class EchoAds_Meta_Box {
                     <p><strong>Configuration Required</strong></p>
                     <p>Please configure API key and endpoint in <a href="<?php echo admin_url( 'options-general.php?page=auto-send-plugin' ); ?>" target="_blank">EchoAds Settings</a>. Audio will be generated automatically when you publish this post.</p>
                 </div>
-            <?php elseif ( $audio_scheduled ) : ?>
-                <?php
-                $send_overdue = ( time() - (int) $audio_scheduled ) > EchoAds_Post_Sender::QUEUED_SEND_OVERDUE_AFTER
-                    || ! wp_next_scheduled( 'echoads_send_post_data', array( $post->ID ) );
-                ?>
-                <div class="echoads-notice <?php echo $send_overdue ? 'echoads-notice-warning' : 'echoads-notice-info'; ?>">
-                    <p><strong>Audio Generation Queued</strong></p>
-                    <?php if ( $send_overdue ) : ?>
-                        <p>This post hasn't been sent to EchoAds yet. WordPress scheduled tasks (WP-Cron) don't seem to be running on this site, so queued posts are sent when an editor opens wp-admin. You can also send it now.</p>
-                    <?php else : ?>
-                        <p>This post will be sent to EchoAds for audio generation shortly.</p>
-                    <?php endif; ?>
-                </div>
-                <button type="button" id="echoads-generate-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="width: 100%;">
-                    Send to EchoAds Now
-                </button>
             <?php elseif ( $audio_requested && ( $audio_status === 'PENDING' || $audio_status === 'PROCESSING' ) ) : ?>
                 <div class="echoads-notice echoads-notice-info">
                     <p><strong>Audio Generation In Progress</strong></p>
                     <p>Status: <strong><?php echo esc_html( $audio_status ); ?></strong></p>
                     <p>Please check the status to see when audio generation is complete.</p>
                 </div>
-                <button type="button" id="echoads-check-status-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="width: 100%;">
+                <button type="button" id="echoads-check-status-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" data-auto-check="1" style="width: 100%;">
                     Check Audio Article Status
                 </button>
             <?php elseif ( $audio_generated && $audio_status === 'COMPLETED' ) : ?>
@@ -96,7 +79,7 @@ class EchoAds_Meta_Box {
                         <p><strong>Audio Generation Requested</strong></p>
                         <p>Audio generation was requested. Please check the status to see the current state.</p>
                     </div>
-                    <button type="button" id="echoads-check-status-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="width: 100%;">
+                    <button type="button" id="echoads-check-status-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" data-auto-check="1" style="width: 100%;">
                         Check Audio Article Status
                     </button>
                     <?php if ( $audio_status !== 'PENDING' && $audio_status !== 'PROCESSING' ) : ?>
@@ -412,12 +395,24 @@ class EchoAds_Meta_Box {
             });
 
             // Check Status button handler
-            $(document).on('click', '#echoads-check-status-btn', function(e) {
+            $(document).on('click', '#echoads-check-status-btn', function(e, isAutoCheck) {
                 e.preventDefault();
 
                 var button = $(this);
                 var postId = button.data('post-id');
                 var responseDiv = $('#echoads-response-message');
+
+                // Not after the automatic check on page load: the editor may already be typing.
+                function reloadToShowStatus() {
+                    if (isAutoCheck) {
+                        button.hide();
+                        responseDiv.append('<br>Reload the page to see the updated options.');
+                        return;
+                    }
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1500);
+                }
 
                 // Update button state
                 button.prop('disabled', true);
@@ -439,20 +434,14 @@ class EchoAds_Meta_Box {
                             
                             if (status === 'COMPLETED') {
                                 responseDiv.addClass('success').html('<strong>Audio Generation Complete!</strong><br>' + statusMessage).show();
-                                // Reload to show Preview button
-                                setTimeout(function() {
-                                    location.reload();
-                                }, 1500);
+                                reloadToShowStatus();
                             } else if (status === 'PENDING' || status === 'PROCESSING') {
                                 responseDiv.addClass('info').html('<strong>Audio Still Processing</strong><br>' + statusMessage + '<br>Please check again later.').show();
                                 button.prop('disabled', false);
                                 button.text('Check Audio Article Status');
                             } else if (status === 'FAILED' || status === 'SKIPPED') {
                                 responseDiv.addClass('error').html('<strong>Audio Generation ' + status + '</strong><br>' + statusMessage + '<br>Audio generation failed. The post will attempt to generate audio again when republished.').show();
-                                // Reload to show updated status
-                                setTimeout(function() {
-                                    location.reload();
-                                }, 1500);
+                                reloadToShowStatus();
                             } else {
                                 responseDiv.addClass('info').html('<strong>Status Checked</strong><br>' + statusMessage).show();
                                 button.prop('disabled', false);
@@ -482,6 +471,9 @@ class EchoAds_Meta_Box {
                     }
                 });
             });
+
+            // Covers sites where WP-Cron doesn't run, so nobody has to click Check Status.
+            $('#echoads-check-status-btn[data-auto-check]').trigger('click', [true]);
 
             // Regenerate Audio / Generate Audio (send now) button handler
             $(document).on('click', '#echoads-regenerate-btn, #echoads-generate-btn', function(e) {

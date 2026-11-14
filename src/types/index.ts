@@ -5,7 +5,6 @@ export interface AudioData {
   prerollTrackingUrl: string
   postrollTrackingUrl: string
   apiKey: string
-  statusEndpoint: string
   configEndpoint: string
   audioUrlsEndpoint?: string
   preRollAudioId: string | null
@@ -41,20 +40,4 @@ export interface TrackingPayload {
   pluginVersion?: string
   // Lets the backend tell intro from outro plays of the default (house) ad, which have no campaignAudioId.
   adSlot?: AdSlot
-}
-
-export type AudioStatus =
-  | 'COMPLETED'
-  | 'PENDING'
-  | 'PROCESSING'
-  | 'FAILED'
-  | 'SKIPPED'
-  | string
-
-export interface StatusResponse {
-  success?: boolean
-  data?: {
-    audioStatus: AudioStatus
-  }
-  audioStatus?: AudioStatus
 }

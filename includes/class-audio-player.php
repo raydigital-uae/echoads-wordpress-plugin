@@ -19,18 +19,12 @@ class EchoAds_Audio_Player
 
         // The ID check skips other posts' content run through this filter on the same page (e.g. related-post excerpts).
         if (is_singular() && !is_feed() && !is_admin() && $post && (int) $post->ID === get_queried_object_id()) {
-            // Only show audio player for posts that have generated audio
-            $audio_generated = get_post_meta($post->ID, '_echoads_audio_generated', true);
+            // Render for any post sent to EchoAds, ready or not: the browser resolves the audio and stays
+            // hidden until it exists, so a page cached before generation finished still gets the player.
+            $sent_to_echoads = get_post_meta($post->ID, '_echoads_audio_generated', true)
+                || get_post_meta($post->ID, '_echoads_audio_requested', true);
 
-            // Audio generation is asynchronous: the generated flag is normally set
-            // when an editor clicks "Check Status" in wp-admin. Posts whose audio
-            // was auto-generated on publish never get that click, so self-heal by
-            // polling the backend status here (throttled per post).
-            if (!$audio_generated) {
-                $audio_generated = $this->maybe_mark_audio_generated($post->ID);
-            }
-
-            if ($audio_generated) {
+            if ($sent_to_echoads) {
                 $audio_player = $this->generate_audio_player($post->ID);
                 // Only append/prepend player if valid audio data was found
                 if (!empty($audio_player)) {
@@ -48,42 +42,6 @@ class EchoAds_Audio_Player
         return $content;
     }
 
-    private function maybe_mark_audio_generated($post_id)
-    {
-        $audio_requested = get_post_meta($post_id, '_echoads_audio_requested', true);
-        if (empty($audio_requested)) {
-            return false;
-        }
-
-        $transient_key = 'echoads_status_check_' . $post_id;
-        if (get_transient($transient_key)) {
-            return false;
-        }
-        set_transient($transient_key, 1, 5 * MINUTE_IN_SECONDS);
-
-        $status = EchoAds_Post_Sender::fetch_audio_status($post_id);
-        if ($status === false) {
-            return false;
-        }
-
-        update_post_meta($post_id, '_echoads_audio_status', $status);
-
-        if ($status === 'COMPLETED') {
-            update_post_meta($post_id, '_echoads_audio_generated', current_time('mysql'));
-            delete_transient($transient_key);
-            return true;
-        }
-
-        if ($status === 'FAILED' || $status === 'SKIPPED') {
-            // Terminal states: back off much longer so we don't poll a dead article
-            // on every uncached page view. A regeneration + manual status check in
-            // wp-admin still updates the meta directly, bypassing this throttle.
-            set_transient($transient_key, 1, 6 * HOUR_IN_SECONDS);
-        }
-
-        return false;
-    }
-
     public function generate_audio_player($post_id)
     {
         $audio_endpoint = EchoAds_Settings::get_audio_endpoint();
@@ -99,21 +57,7 @@ class EchoAds_Audio_Player
             return '';
         }
 
-        // The browser re-resolves the ad on load, so this is only the fallback: cache it so a
-        // slow or down backend can't stall every page render. Failures are cached as 0 for a minute.
-        $cache_key = 'echoads_audio_' . $post_id;
-        $audio_data = get_transient($cache_key);
-        if ($audio_data === false) {
-            $audio_data = self::fetch_audio_data($audio_endpoint, $api_key, $post_id);
-            set_transient($cache_key, $audio_data ?: 0, $audio_data ? 10 * MINUTE_IN_SECONDS : MINUTE_IN_SECONDS);
-        }
-
-        if (!$audio_data) {
-            error_log('No audio data available for post ID: ' . $post_id);
-            return '';
-        }
-
-        return $this->render_audio_player($post_id, $audio_data);
+        return $this->render_audio_player($post_id);
     }
 
     public static function fetch_audio_data($audio_endpoint, $api_key, $post_id)
@@ -193,7 +137,7 @@ class EchoAds_Audio_Player
         );
     }
 
-    private function render_audio_player($post_id, $audio_data)
+    private function render_audio_player($post_id)
     {
         $unique_id = 'audio-player-' . $post_id;
         $tracking_endpoint = EchoAds_Settings::get_tracking_endpoint();
@@ -201,15 +145,9 @@ class EchoAds_Audio_Player
         $bg_color = EchoAds_Settings::get_player_bg_color();
         $endpoint = EchoAds_Settings::get_endpoint();
 
-        // Construct status and config endpoint URLs (endpoint already includes base path e.g. .../website-articles)
-        $status_endpoint = '';
-        $config_endpoint = '';
-        if (!empty($endpoint)) {
-            $base = rtrim($endpoint, '/');
-            $status_endpoint = $base . '/' . $post_id . '/status';
-            $config_endpoint = $base . '/config';
-        }
-        // The player re-resolves the ad in the browser; $audio_data is only the fallback (page caches freeze it).
+        // Endpoint already includes the base path, e.g. .../website-articles
+        $config_endpoint = !empty($endpoint) ? rtrim($endpoint, '/') . '/config' : '';
+        // The browser fetches the audio links on every load: ads are matched per visitor and must never be cached.
         $audio_urls_endpoint = add_query_arg('externalId', strval($post_id), EchoAds_Settings::get_audio_endpoint());
 
         ob_start();
@@ -222,18 +160,17 @@ class EchoAds_Audio_Player
         <script>
             (function () {
                 var audioData = {
-                    preRoll: "<?php echo esc_js($audio_data['preRoll']); ?>",
-                    article: "<?php echo esc_js($audio_data['article']); ?>",
-                    postRoll: "<?php echo esc_js($audio_data['postRoll']); ?>",
+                    preRoll: "",
+                    article: "",
+                    postRoll: "",
                     prerollTrackingUrl: "<?php echo esc_js($tracking_endpoint); ?>",
                     postrollTrackingUrl: "<?php echo esc_js($tracking_endpoint); ?>",
                     apiKey: "<?php echo esc_js($api_key); ?>",
-                    statusEndpoint: "<?php echo esc_js($status_endpoint); ?>",
                     configEndpoint: "<?php echo esc_js($config_endpoint); ?>",
                     audioUrlsEndpoint: "<?php echo esc_js($audio_urls_endpoint); ?>",
-                    preRollAudioId: <?php echo isset($audio_data['preRollAudioId']) && $audio_data['preRollAudioId'] !== null ? json_encode($audio_data['preRollAudioId']) : 'null'; ?>,
-                    postRollAudioId: <?php echo isset($audio_data['postRollAudioId']) && $audio_data['postRollAudioId'] !== null ? json_encode($audio_data['postRollAudioId']) : 'null'; ?>,
-                    articleAudioId: <?php echo isset($audio_data['articleAudioId']) && $audio_data['articleAudioId'] !== null ? json_encode($audio_data['articleAudioId']) : 'null'; ?>,
+                    preRollAudioId: null,
+                    postRollAudioId: null,
+                    articleAudioId: null,
                     articleExternalId: "<?php echo esc_js(strval($post_id)); ?>",
                     pluginVersion: "<?php echo esc_js(ECHOADS_PLUGIN_VERSION); ?>"
                 };

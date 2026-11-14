@@ -85,7 +85,6 @@ All original functionality has been maintained:
 - ✅ Hide player until config loads (no EN→AR flash)
 - ✅ CLICK_TO_PLAY: listen button → show player, play when canplay
 - ✅ Pre-roll, article, post-roll tracks with seeking rules
-- ✅ Status check API before play
 - ✅ Tracking: start + 5-second events, visitorId, sessionId
 - ✅ Translations (en/ar), RTL support
 - ✅ Keyboard and touch support

@@ -6,23 +6,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class EchoAds_Post_Sender {
 
-    // A queued send still waiting after this many seconds means WP-Cron isn't running on the site.
-    const QUEUED_SEND_OVERDUE_AFTER = 300;
+    // WP-Cron polls the backend this often while audio is generating, up to the max (about an hour).
+    const STATUS_POLL_INTERVAL = 60;
+    const STATUS_POLL_MAX_ATTEMPTS = 60;
 
     public function __construct() {
         add_action( 'wp_ajax_echoads_generate_audio', array( $this, 'handle_ajax_generate_audio' ) );
         add_action( 'wp_ajax_echoads_check_audio_status', array( $this, 'handle_ajax_check_status' ) );
         add_action( 'wp_ajax_echoads_get_preview_audio', array( $this, 'handle_ajax_get_preview_audio' ) );
-        add_action( 'wp_ajax_echoads_send_overdue_posts', array( $this, 'handle_ajax_send_overdue_posts' ) );
-        add_action( 'transition_post_status', array( $this, 'handle_post_publish' ), 10, 3 );
-        add_action( 'echoads_send_post_data', array( $this, 'send_post_data' ) );
-        add_action( 'admin_footer', array( $this, 'print_overdue_sender_script' ) );
+        // Fires after terms, featured image and meta are saved (block editor included), so the sent post is complete.
+        add_action( 'wp_after_insert_post', array( $this, 'handle_post_publish' ), 10, 4 );
+        add_action( 'echoads_poll_audio_status', array( $this, 'poll_audio_status' ), 10, 2 );
     }
 
     public function send_post_data( $post_id ) {
-        // No longer queued, whatever the outcome below.
-        delete_post_meta( $post_id, '_echoads_audio_scheduled' );
-
         $api_key = EchoAds_Settings::get_api_key();
         $endpoint = EchoAds_Settings::get_endpoint();
 
@@ -52,9 +49,39 @@ class EchoAds_Post_Sender {
         update_post_meta( $post_id, '_echoads_audio_status', 'PENDING' );
 
         $result = $this->send_request_sync( $endpoint, $api_key, $dto, $post_id );
-        if ( ! $result['success'] ) {
+        if ( $result['success'] ) {
+            self::schedule_status_poll( $post_id );
+        } else {
             // Lets the editor see the failure and regenerate, instead of the post sitting in PENDING forever.
             update_post_meta( $post_id, '_echoads_audio_status', 'FAILED' );
+        }
+    }
+
+    /**
+     * Generation takes a while on the backend, so WP-Cron checks back until it finishes.
+     * Without WP-Cron this never runs; the meta box then checks on load or via "Check Status".
+     */
+    private static function schedule_status_poll( $post_id, $attempt = 1 ) {
+        wp_schedule_single_event( time() + self::STATUS_POLL_INTERVAL, 'echoads_poll_audio_status', array( $post_id, $attempt ) );
+    }
+
+    public function poll_audio_status( $post_id, $attempt ) {
+        $status = self::fetch_audio_status( $post_id );
+        if ( $status !== false ) {
+            self::save_audio_status( $post_id, $status );
+        }
+
+        $finished = in_array( $status, array( 'COMPLETED', 'FAILED', 'SKIPPED' ), true );
+        if ( ! $finished && $attempt < self::STATUS_POLL_MAX_ATTEMPTS ) {
+            self::schedule_status_poll( $post_id, $attempt + 1 );
+        }
+    }
+
+    private static function save_audio_status( $post_id, $status ) {
+        update_post_meta( $post_id, '_echoads_audio_status', $status );
+        if ( $status === 'COMPLETED' ) {
+            // Only mark as generated when status is COMPLETED
+            update_post_meta( $post_id, '_echoads_audio_generated', current_time( 'mysql' ) );
         }
     }
 
@@ -192,10 +219,6 @@ class EchoAds_Post_Sender {
             return;
         }
 
-        // A manual send replaces a queued one, so WP-Cron can't send the post a second time.
-        wp_clear_scheduled_hook( 'echoads_send_post_data', array( $post_id ) );
-        delete_post_meta( $post_id, '_echoads_audio_scheduled' );
-
         $result = $this->send_request_sync( $endpoint, $api_key, $dto, $post_id );
 
         error_log( 'EchoAds Plugin: send_request_sync returned: ' . var_export( $result, true ) );
@@ -205,6 +228,7 @@ class EchoAds_Post_Sender {
             // Store that audio was requested, but don't mark as generated until status is COMPLETED
             update_post_meta( $post_id, '_echoads_audio_requested', current_time( 'mysql' ) );
             update_post_meta( $post_id, '_echoads_audio_status', 'PENDING' );
+            self::schedule_status_poll( $post_id );
             error_log( 'EchoAds Plugin: Post meta updated successfully' );
             wp_send_json_success( array( 'message' => 'Audio generation initiated successfully' ) );
         } else {
@@ -337,13 +361,7 @@ class EchoAds_Post_Sender {
             return;
         }
 
-        // Update post meta based on status
-        update_post_meta( $post_id, '_echoads_audio_status', $status_result );
-
-        if ( $status_result === 'COMPLETED' ) {
-            // Only mark as generated when status is COMPLETED
-            update_post_meta( $post_id, '_echoads_audio_generated', current_time( 'mysql' ) );
-        }
+        self::save_audio_status( $post_id, $status_result );
 
         wp_send_json_success( array(
             'status' => $status_result,
@@ -397,117 +415,26 @@ class EchoAds_Post_Sender {
         return false;
     }
 
-    public function handle_post_publish( $new_status, $old_status, $post ) {
+    public function handle_post_publish( $post_id, $post, $update, $post_before ) {
         // Only trigger for posts (not pages or other post types)
         if ( $post->post_type !== 'post' ) {
             return;
         }
 
         // Only trigger when transitioning to publish status
-        if ( $new_status !== 'publish' || $old_status === 'publish' ) {
+        if ( $post->post_status !== 'publish' || ( $post_before && $post_before->post_status === 'publish' ) ) {
             return;
         }
 
         // Check if audio has already been generated
-        $audio_generated = get_post_meta( $post->ID, '_echoads_audio_generated', true );
+        $audio_generated = get_post_meta( $post_id, '_echoads_audio_generated', true );
         if ( ! empty( $audio_generated ) ) {
-            error_log( 'EchoAds Plugin: Audio already generated for post ' . $post->ID . ', skipping auto-generation' );
+            error_log( 'EchoAds Plugin: Audio already generated for post ' . $post_id . ', skipping auto-generation' );
             return;
         }
 
-        // Check if API configuration is available
-        $api_key = EchoAds_Settings::get_api_key();
-        $endpoint = EchoAds_Settings::get_endpoint();
-
-        if ( empty( $api_key ) || empty( $endpoint ) ) {
-            error_log( 'EchoAds Plugin: Missing API key or endpoint configuration, cannot auto-generate audio for post ' . $post->ID );
-            return;
-        }
-
-        // Sent from WP-cron so publishing (and bulk publishing) doesn't wait on the backend.
-        error_log( 'EchoAds Plugin: Scheduling audio generation for published post ' . $post->ID );
-        wp_schedule_single_event( time(), 'echoads_send_post_data', array( $post->ID ) );
-        // Lets the meta box show the post as queued, and flag it if WP-Cron never picks it up.
-        update_post_meta( $post->ID, '_echoads_audio_scheduled', time() );
-    }
-
-    /**
-     * Queued sends whose WP-Cron event is overdue, oldest first.
-     */
-    private static function get_overdue_sends( $limit ) {
-        $overdue = array();
-        $cutoff = time() - self::QUEUED_SEND_OVERDUE_AFTER;
-
-        foreach ( wp_get_ready_cron_jobs() as $timestamp => $hooks ) {
-            if ( $timestamp > $cutoff || empty( $hooks['echoads_send_post_data'] ) ) {
-                continue;
-            }
-            foreach ( $hooks['echoads_send_post_data'] as $event ) {
-                $overdue[] = array( 'timestamp' => $timestamp, 'args' => $event['args'] );
-                if ( count( $overdue ) >= $limit ) {
-                    return $overdue;
-                }
-            }
-        }
-
-        return $overdue;
-    }
-
-    /**
-     * WP-Cron runs from a loopback request the site makes to itself, which some hosts block
-     * (firewalls, bot challenges), so queued posts would never be sent. When that has happened,
-     * any wp-admin page sends them from the editor's browser instead.
-     */
-    public function print_overdue_sender_script() {
-        if ( ! current_user_can( 'edit_posts' ) ) {
-            return;
-        }
-        if ( empty( EchoAds_Settings::get_api_key() ) || empty( EchoAds_Settings::get_endpoint() ) ) {
-            return;
-        }
-        if ( ! self::get_overdue_sends( 1 ) ) {
-            return;
-        }
-        ?>
-        <script>
-        fetch(<?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>, {
-            method: 'POST',
-            credentials: 'same-origin',
-            body: new URLSearchParams({
-                action: 'echoads_send_overdue_posts',
-                nonce: <?php echo wp_json_encode( wp_create_nonce( 'echoads_send_overdue_posts' ) ); ?>
-            })
-        });
-        </script>
-        <?php
-    }
-
-    public function handle_ajax_send_overdue_posts() {
-        check_ajax_referer( 'echoads_send_overdue_posts', 'nonce' );
-
-        if ( ! current_user_can( 'edit_posts' ) ) {
-            wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
-            return;
-        }
-
-        // Several open admin tabs would otherwise race to send the same posts.
-        if ( get_transient( 'echoads_sending_overdue_posts' ) ) {
-            wp_send_json_success( array( 'sent' => 0 ) );
-            return;
-        }
-        set_transient( 'echoads_sending_overdue_posts', 1, MINUTE_IN_SECONDS );
-
-        $sent = 0;
-        foreach ( self::get_overdue_sends( 3 ) as $event ) {
-            // Unschedule first so a late WP-Cron run can't send the same post again.
-            wp_unschedule_event( $event['timestamp'], 'echoads_send_post_data', $event['args'] );
-            error_log( 'EchoAds Plugin: WP-Cron did not send post ' . $event['args'][0] . ', sending it from wp-admin' );
-            $this->send_post_data( (int) $event['args'][0] );
-            $sent++;
-        }
-
-        delete_transient( 'echoads_sending_overdue_posts' );
-        wp_send_json_success( array( 'sent' => $sent ) );
+        // Sent right away, not via WP-Cron, so it never depends on cron running. Missing config is checked inside.
+        $this->send_post_data( $post_id );
     }
 
     public function handle_ajax_get_preview_audio() {
