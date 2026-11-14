@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.1](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.6.0...v1.6.1) (2026-11-14)
+
+
+### 🐛 Bug Fixes
+
+* make audio generation and the player reliable ([e3f220c](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/e3f220c75c79b414086c6416c5035b0875a0aacc))
+* make audio generation and the player reliable ([ef4dc30](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/ef4dc30aa16c32e7e0a1648ae749959db80f5d7a))
+
 ## [1.6.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.5.3...v1.6.0) (2026-10-13)
 
 
