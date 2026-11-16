@@ -24,23 +24,23 @@ class EchoAds_Post_Sender {
         $endpoint = EchoAds_Settings::get_endpoint();
 
         if ( empty( $api_key ) || empty( $endpoint ) ) {
-            error_log( 'EchoAds Plugin: Missing API key or endpoint configuration' );
+            echoads_log( 'Missing API key or endpoint configuration' );
             return;
         }
 
-        error_log( 'Attempting to send data to endpoint: ' . $endpoint );
+        echoads_log( 'Attempting to send data to endpoint: ' . $endpoint );
 
         $post = get_post( $post_id );
         
         if ( ! $post ) {
-            error_log( 'EchoAds Plugin: Post not found with ID: ' . $post_id );
+            echoads_log( 'Post not found with ID: ' . $post_id );
             return;
         }
 
         $dto = $this->prepare_post_dto( $post_id, $post );
         
         if ( ! $dto ) {
-            error_log( 'EchoAds Plugin: Failed to prepare DTO for post: ' . $post_id );
+            echoads_log( 'Failed to prepare DTO for post: ' . $post_id );
             return;
         }
 
@@ -147,7 +147,7 @@ class EchoAds_Post_Sender {
         if ( ! $permalink || $permalink === false || ! filter_var( $permalink, FILTER_VALIDATE_URL ) ) {
             $home_url = get_home_url();
             $fallback_url = trailingslashit( $home_url ) . '?p=' . $post_id;
-            error_log( 'Using fallback URL for post ' . $post_id . ': ' . $fallback_url );
+            echoads_log( 'Using fallback URL for post ' . $post_id . ': ' . $fallback_url );
             return $fallback_url;
         }
 
@@ -162,7 +162,7 @@ class EchoAds_Post_Sender {
             return;
         }
 
-        $post_id = intval( $_POST['post_id'] );
+        $post_id = isset( $_POST['post_id'] ) ? absint( wp_unslash( $_POST['post_id'] ) ) : 0;
 
         if ( ! $post_id ) {
             wp_send_json_error( array( 'message' => 'Invalid post ID' ) );
@@ -170,7 +170,7 @@ class EchoAds_Post_Sender {
         }
 
         // Check if this is a regeneration request
-        $is_regenerate = isset( $_POST['regenerate'] ) && $_POST['regenerate'] === 'true';
+        $is_regenerate = isset( $_POST['regenerate'] ) && 'true' === sanitize_text_field( wp_unslash( $_POST['regenerate'] ) );
 
         // For regenerate requests, check current status first
         if ( $is_regenerate ) {
@@ -221,18 +221,16 @@ class EchoAds_Post_Sender {
 
         $result = $this->send_request_sync( $endpoint, $api_key, $dto, $post_id );
 
-        error_log( 'EchoAds Plugin: send_request_sync returned: ' . var_export( $result, true ) );
-        error_log( 'EchoAds Plugin: Current post meta _echoads_audio_generated: ' . get_post_meta( $post_id, '_echoads_audio_generated', true ) );
 
         if ( $result['success'] ) {
             // Store that audio was requested, but don't mark as generated until status is COMPLETED
             update_post_meta( $post_id, '_echoads_audio_requested', current_time( 'mysql' ) );
             update_post_meta( $post_id, '_echoads_audio_status', 'PENDING' );
             self::schedule_status_poll( $post_id );
-            error_log( 'EchoAds Plugin: Post meta updated successfully' );
+            echoads_log( 'Post meta updated successfully' );
             wp_send_json_success( array( 'message' => 'Audio generation initiated successfully' ) );
         } else {
-            error_log( 'EchoAds Plugin: send_request_sync returned failure, sending error response with details' );
+            echoads_log( 'send_request_sync returned failure, sending error response with details' );
             
             // Build detailed error message
             $error_details = array(
@@ -258,11 +256,11 @@ class EchoAds_Post_Sender {
     private function send_request_sync( $endpoint, $api_key, $dto, $post_id ) {
         $body = wp_json_encode( $dto );
 
-        error_log( 'EchoAds Plugin: Sending DTO for post ' . $post_id . ': ' . $body );
+        echoads_log( 'Sending post ' . $post_id . ' (' . strlen( $body ) . ' bytes)' );
 
         if ( json_last_error() !== JSON_ERROR_NONE ) {
             $error_message = 'JSON encoding error: ' . json_last_error_msg();
-            error_log( 'EchoAds Plugin: ' . $error_message );
+            echoads_log( '' . $error_message );
             return array(
                 'success' => false,
                 'response_code' => null,
@@ -287,7 +285,7 @@ class EchoAds_Post_Sender {
 
         if ( is_wp_error( $response ) ) {
             $error_message = $response->get_error_message();
-            error_log( 'EchoAds Plugin: Error sending post data to ' . $endpoint . ': ' . $error_message );
+            echoads_log( 'Error sending post data to ' . $endpoint . ': ' . $error_message );
             return array(
                 'success' => false,
                 'response_code' => null,
@@ -306,12 +304,11 @@ class EchoAds_Post_Sender {
             }
 
             // Enhanced logging for debugging (full body in logs)
-            error_log( 'EchoAds Plugin: Response received - Code: ' . var_export( $response_code, true ) . ', Body: ' . $response_body );
-            error_log( 'EchoAds Plugin: Response headers: ' . print_r( $response_headers, true ) );
+            echoads_log( 'Response received for post ' . $post_id . ': HTTP ' . $response_code );
 
             // Handle null response code (shouldn't happen, but just in case)
             if ( $response_code === null ) {
-                error_log( 'EchoAds Plugin: Warning - Response code is null. Treating as failure.' );
+                echoads_log( 'Warning - Response code is null. Treating as failure.' );
                 return array(
                     'success' => false,
                     'response_code' => null,
@@ -324,9 +321,9 @@ class EchoAds_Post_Sender {
             $is_success = ( $response_code >= 200 && $response_code < 300 );
 
             if ( $is_success ) {
-                error_log( 'EchoAds Plugin: Successfully sent post data. Response code: ' . $response_code );
+                echoads_log( 'Successfully sent post data. Response code: ' . $response_code );
             } else {
-                error_log( 'EchoAds Plugin: Failed to send post data. Response code: ' . $response_code . ', Body: ' . $response_body );
+                echoads_log( 'Failed to send post data. Response code: ' . $response_code . ', Body: ' . $response_body );
             }
 
             return array(
@@ -347,7 +344,7 @@ class EchoAds_Post_Sender {
             return;
         }
 
-        $post_id = intval( $_POST['post_id'] );
+        $post_id = isset( $_POST['post_id'] ) ? absint( wp_unslash( $_POST['post_id'] ) ) : 0;
 
         if ( ! $post_id ) {
             wp_send_json_error( array( 'message' => 'Invalid post ID' ) );
@@ -374,7 +371,7 @@ class EchoAds_Post_Sender {
         $endpoint = EchoAds_Settings::get_endpoint();
 
         if ( empty( $api_key ) || empty( $endpoint ) ) {
-            error_log( 'EchoAds Plugin: Missing API key or endpoint configuration for status check' );
+            echoads_log( 'Missing API key or endpoint configuration for status check' );
             return false;
         }
 
@@ -391,7 +388,7 @@ class EchoAds_Post_Sender {
         $response = wp_remote_get( $status_endpoint, $args );
 
         if ( is_wp_error( $response ) ) {
-            error_log( 'EchoAds Plugin: Error fetching audio status: ' . $response->get_error_message() );
+            echoads_log( 'Error fetching audio status: ' . $response->get_error_message() );
             return false;
         }
 
@@ -400,7 +397,7 @@ class EchoAds_Post_Sender {
         $status_info = json_decode( $body, true );
 
         if ( $response_code < 200 || $response_code >= 300 ) {
-            error_log( 'EchoAds Plugin: Failed to fetch audio status. Response code: ' . $response_code . ', Body: ' . $body );
+            echoads_log( 'Failed to fetch audio status. Response code: ' . $response_code . ', Body: ' . $body );
             return false;
         }
 
@@ -411,7 +408,7 @@ class EchoAds_Post_Sender {
             return $status_info['audioStatus'];
         }
 
-        error_log( 'EchoAds Plugin: Unexpected status response format: ' . $body );
+        echoads_log( 'Unexpected status response format: ' . $body );
         return false;
     }
 
@@ -429,7 +426,7 @@ class EchoAds_Post_Sender {
         // Check if audio has already been generated
         $audio_generated = get_post_meta( $post_id, '_echoads_audio_generated', true );
         if ( ! empty( $audio_generated ) ) {
-            error_log( 'EchoAds Plugin: Audio already generated for post ' . $post_id . ', skipping auto-generation' );
+            echoads_log( 'Audio already generated for post ' . $post_id . ', skipping auto-generation' );
             return;
         }
 
@@ -445,7 +442,7 @@ class EchoAds_Post_Sender {
             return;
         }
 
-        $post_id = intval( $_POST['post_id'] );
+        $post_id = isset( $_POST['post_id'] ) ? absint( wp_unslash( $_POST['post_id'] ) ) : 0;
 
         if ( ! $post_id ) {
             wp_send_json_error( array( 'message' => 'Invalid post ID' ) );
