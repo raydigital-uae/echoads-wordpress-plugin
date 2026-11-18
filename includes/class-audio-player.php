@@ -7,8 +7,14 @@ if (!defined('ABSPATH')) {
 class EchoAds_Audio_Player
 {
 
+    // Players already registered on this page. the_content can run more than once per request
+    // (SEO plugins build descriptions from it), and each player must be initialized only once.
+    private $registered_players = array();
+
     public function __construct()
     {
+        // The plugin boots on init, so register right away.
+        $this->register_assets();
         add_filter('the_content', array($this, 'add_audio_player'));
         add_action('wp_enqueue_scripts', array($this, 'enqueue_assets'));
     }
@@ -48,12 +54,12 @@ class EchoAds_Audio_Player
         $api_key = EchoAds_Settings::get_api_key();
 
         if (empty($audio_endpoint)) {
-            error_log('Error: Audio endpoint URL is not set.');
+            echoads_log('Error: Audio endpoint URL is not set.');
             return '';
         }
 
         if (empty($api_key)) {
-            error_log('Error: API key is not set for audio endpoint.');
+            echoads_log('Error: API key is not set for audio endpoint.');
             return '';
         }
 
@@ -75,7 +81,7 @@ class EchoAds_Audio_Player
         $response = wp_remote_get($audio_endpoint, $args);
 
         if (is_wp_error($response)) {
-            error_log('Error fetching audio data: ' . $response->get_error_message());
+            echoads_log('Error fetching audio data: ' . $response->get_error_message());
             return false;
         }
 
@@ -107,10 +113,10 @@ class EchoAds_Audio_Player
         } elseif (isset($audio_info['preRollAudioLink']) || isset($audio_info['postRollAudioLink']) || isset($audio_info['articleAudioLink'])) {
             $audio_urls = $audio_info;
         } elseif (is_array($audio_info) && !empty($audio_info)) {
-            error_log('Unrecognized audio response format, attempting to parse: ' . print_r($audio_info, true));
+            echoads_log('Unrecognized audio response format, attempting to parse: ' . wp_json_encode($audio_info));
             return false;
         } else {
-            error_log('Error: No valid audio links found in response. Response was: ' . $raw_body);
+            echoads_log('Error: No valid audio links found in response. Response was: ' . $raw_body);
             return false;
         }
 
@@ -150,89 +156,80 @@ class EchoAds_Audio_Player
         // The browser fetches the audio links on every load: ads are matched per visitor and must never be cached.
         $audio_urls_endpoint = add_query_arg('externalId', strval($post_id), EchoAds_Settings::get_audio_endpoint());
 
-        ob_start();
-        ?>
-        <!-- React will render the player UI here -->
-        <div id="<?php echo esc_attr($unique_id); ?>-wrapper" 
-             data-bg-color="<?php echo esc_attr($bg_color); ?>">
-        </div>
-
-        <script>
-            (function () {
-                var audioData = {
-                    preRoll: "",
-                    article: "",
-                    postRoll: "",
-                    prerollTrackingUrl: "<?php echo esc_js($tracking_endpoint); ?>",
-                    postrollTrackingUrl: "<?php echo esc_js($tracking_endpoint); ?>",
-                    apiKey: "<?php echo esc_js($api_key); ?>",
-                    configEndpoint: "<?php echo esc_js($config_endpoint); ?>",
-                    audioUrlsEndpoint: "<?php echo esc_js($audio_urls_endpoint); ?>",
-                    preRollAudioId: null,
-                    postRollAudioId: null,
-                    articleAudioId: null,
-                    articleExternalId: "<?php echo esc_js(strval($post_id)); ?>",
-                    pluginVersion: "<?php echo esc_js(ECHOADS_PLUGIN_VERSION); ?>"
-                };
-
-                var playerId = "<?php echo esc_js($unique_id); ?>";
-
-                if (typeof window.EchoAdsAudioPlayers === "undefined") {
-                    window.EchoAdsAudioPlayers = {};
-                }
-
-                window.EchoAdsAudioPlayers[playerId] = audioData;
-
-                if (typeof window.EchoAdsAudioPlayersPendingInit === "undefined") {
-                    window.EchoAdsAudioPlayersPendingInit = [];
-                }
-                window.EchoAdsAudioPlayersPendingInit.push(playerId);
-
-                if (typeof window.EchoAdsAudioController !== "undefined") {
-                    window.EchoAdsAudioController.init(playerId);
-                }
-            })();
-        </script>
-        <?php
-        return ob_get_clean();
-    }
-
-    public function enqueue_assets()
-    {
-        $plugin_url = plugin_dir_url(dirname(__FILE__));
-        $plugin_path = plugin_dir_path(dirname(__FILE__));
-
-        $css_version = $this->get_file_version($plugin_path . 'assets/dist/echoads-audio-player.css');
-        $js_version = $this->get_file_version($plugin_path . 'assets/dist/echoads-audio-player.js');
-
-        wp_enqueue_style(
-            'echoads-audio-player',
-            $plugin_url . 'assets/dist/echoads-audio-player.css',
-            array(),
-            $css_version
+        $audio_data = array(
+            'preRoll'             => '',
+            'article'             => '',
+            'postRoll'            => '',
+            'prerollTrackingUrl'  => $tracking_endpoint,
+            'postrollTrackingUrl' => $tracking_endpoint,
+            'apiKey'              => $api_key,
+            'configEndpoint'      => $config_endpoint,
+            'audioUrlsEndpoint'   => $audio_urls_endpoint,
+            'preRollAudioId'      => null,
+            'postRollAudioId'     => null,
+            'articleAudioId'      => null,
+            'articleExternalId'   => strval($post_id),
+            'pluginVersion'       => ECHOADS_PLUGIN_VERSION,
         );
 
-        wp_enqueue_script(
+        if (isset($this->registered_players[$unique_id])) {
+            return $this->get_player_markup($unique_id, $bg_color);
+        }
+        $this->registered_players[$unique_id] = true;
+
+        // Registers the player before the player script (printed in the footer) runs; it reads
+        // window.EchoAdsAudioPlayers and initializes every ID in EchoAdsAudioPlayersPendingInit.
+        wp_add_inline_script(
             'echoads-audio-player',
-            $plugin_url . 'assets/dist/echoads-audio-player.js',
-            array(),
-            $js_version,
-            true
+            sprintf(
+                'window.EchoAdsAudioPlayers = window.EchoAdsAudioPlayers || {};'
+                . 'window.EchoAdsAudioPlayers[%1$s] = %2$s;'
+                . 'window.EchoAdsAudioPlayersPendingInit = window.EchoAdsAudioPlayersPendingInit || [];'
+                . 'window.EchoAdsAudioPlayersPendingInit.push(%1$s);',
+                wp_json_encode($unique_id),
+                wp_json_encode($audio_data)
+            ),
+            'before'
+        );
+
+        return $this->get_player_markup($unique_id, $bg_color);
+    }
+
+    private function get_player_markup($unique_id, $bg_color)
+    {
+        // React renders the player UI into this element.
+        return sprintf(
+            '<div id="%s" data-bg-color="%s"></div>',
+            esc_attr($unique_id . '-wrapper'),
+            esc_attr($bg_color)
         );
     }
 
     /**
-     * Get file modification time for cache busting.
-     * Falls back to '1.0.0' if file doesn't exist.
-     *
-     * @param string $file_path Absolute path to the file.
-     * @return string File modification timestamp or '1.0.0' as fallback.
+     * Registered on init: block themes render post content (and so add_audio_player) before
+     * wp_enqueue_scripts fires, and wp_add_inline_script needs the handle to exist by then.
      */
-    private function get_file_version($file_path)
+    public function register_assets()
     {
-        if (file_exists($file_path)) {
-            return filemtime($file_path);
-        }
-        return '1.0.2';
+        wp_register_style(
+            'echoads-audio-player',
+            plugins_url('assets/dist/echoads-audio-player.css', ECHOADS_PLUGIN_FILE),
+            array(),
+            ECHOADS_PLUGIN_VERSION
+        );
+
+        wp_register_script(
+            'echoads-audio-player',
+            plugins_url('assets/dist/echoads-audio-player.js', ECHOADS_PLUGIN_FILE),
+            array(),
+            ECHOADS_PLUGIN_VERSION,
+            true
+        );
+    }
+
+    public function enqueue_assets()
+    {
+        wp_enqueue_style('echoads-audio-player');
+        wp_enqueue_script('echoads-audio-player');
     }
 }

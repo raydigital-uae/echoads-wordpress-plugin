@@ -49,15 +49,21 @@ jobs:
           mkdir -p dist/echoads-audio-player
 
           # Copy plugin files (excluding dev files)
-          cp echoads-posts-plugin.php dist/echoads-audio-player/
+          cp echoads-posts-plugin.php uninstall.php readme.txt LICENSE dist/echoads-audio-player/
           cp -r includes dist/echoads-audio-player/
           [ -d languages ] && cp -r languages dist/echoads-audio-player/ || true
 
+          # WordPress.org reads the released version from the readme's Stable tag.
+          sed -i "s/^Stable tag:.*/Stable tag: ${{ needs.release-please.outputs.version }}/" dist/echoads-audio-player/readme.txt
+
           # Copy assets (including built dist)
           mkdir -p dist/echoads-audio-player/assets
-          cp -r assets/css dist/echoads-audio-player/assets/
-          cp -r assets/dist dist/echoads-audio-player/assets/
-          cp assets/white-logo.png dist/echoads-audio-player/assets/ 2>/dev/null || true
+          cp -r assets/css assets/js assets/dist dist/echoads-audio-player/assets/
+          cp assets/white-logo.png dist/echoads-audio-player/assets/
+
+          # WordPress.org requires the source of the built player script (guideline 4).
+          cp -r src package.json vite.config.ts tsconfig.json tsconfig.node.json dist/echoads-audio-player/
+          find dist/echoads-audio-player -name '.DS_Store' -delete
 
           # Create the zip file
           cd dist

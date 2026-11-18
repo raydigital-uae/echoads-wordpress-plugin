@@ -1,0 +1,124 @@
+#echoads-meta-box {
+    font-size: 13px;
+}
+
+.echoads-notice {
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    border-radius: 4px;
+    border-left: 4px solid;
+}
+
+.echoads-notice-info {
+    background: #e7f3ff;
+    border-left-color: #0073aa;
+    color: #0073aa;
+}
+
+.echoads-notice-success {
+    background: #ecf7ed;
+    border-left-color: #46b450;
+    color: #46b450;
+}
+
+.echoads-notice-warning {
+    background: #fff8e5;
+    border-left-color: #ffb900;
+    color: #b26800;
+}
+
+.echoads-notice-error {
+    background: #fbeaea;
+    border-left-color: #dc3232;
+    color: #dc3232;
+}
+
+.echoads-notice p {
+    margin: 4px 0;
+}
+
+.echoads-notice p:first-child {
+    margin-top: 0;
+}
+
+.echoads-notice p:last-child {
+    margin-bottom: 0;
+}
+
+#echoads-check-status-btn, #echoads-preview-btn, #echoads-regenerate-btn, #echoads-generate-btn {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+#echoads-check-status-btn:disabled, #echoads-preview-btn:disabled, #echoads-regenerate-btn:disabled, #echoads-generate-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.echoads-btn-icon {
+    margin-right: 6px;
+}
+
+
+#echoads-response-message {
+    margin-top: 12px;
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+
+#echoads-response-message.success {
+    background: #ecf7ed;
+    border-left: 4px solid #46b450;
+    color: #46b450;
+}
+
+#echoads-response-message.error {
+    background: #fbeaea;
+    border-left: 4px solid #dc3232;
+    color: #dc3232;
+}
+
+#echoads-response-message.info {
+    background: #e7f3ff;
+    border-left: 4px solid #0073aa;
+    color: #0073aa;
+}
+
+.echoads-info {
+    border-top: 1px solid #ddd;
+    padding-top: 8px;
+    margin-top: 12px;
+}
+
+.echoads-info p {
+    margin: 0;
+    color: #666;
+}
+
+.echoads-error-summary {
+    margin-bottom: 8px;
+}
+
+.echoads-error-code {
+    font-size: 12px;
+    font-weight: 600;
+    color: #dc3232;
+}
+
+.echoads-error-message {
+    font-size: 12px;
+    color: #666;
+}
+
+.echoads-toggle-details {
+    font-size: 11px;
+    color: #0073aa;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.echoads-toggle-details:hover {
+    text-decoration: underline;
+}
