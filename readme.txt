@@ -1,7 +1,7 @@
 === EchoAds Audio Player ===
 Contributors: TODO-wporg-username
 Tags: audio, text to speech, podcast, audio ads, monetization
-Requires at least: 5.6
+Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 1.6.1
@@ -69,7 +69,7 @@ Yes. The audio and ad links are loaded in the visitor's browser on every page vi
 
 == Source code ==
 
-The player script in `assets/dist/` is built from the TypeScript and React source in `src/`, which is included in the plugin. To rebuild it, run `npm install` and then `npm run build` (or `bun install` and `bun run build`).
+The player script in `assets/dist/` is built from the TypeScript and React source in `src/`, which is included in the plugin. To rebuild it, run `npm install` and then `npm run build` (or `bun install` and `bun run build`). The player uses the copy of React that ships with WordPress, and does not bundle its own.
 
 == Changelog ==
 

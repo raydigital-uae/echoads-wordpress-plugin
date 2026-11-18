@@ -218,10 +218,12 @@ class EchoAds_Audio_Player
             ECHOADS_PLUGIN_VERSION
         );
 
+        // The player uses WordPress's React (react-jsx-runtime needs WordPress 6.6+) rather than
+        // bundling its own; see vite.config.ts.
         wp_register_script(
             'echoads-audio-player',
             plugins_url('assets/dist/echoads-audio-player.js', ECHOADS_PLUGIN_FILE),
-            array(),
+            array('react', 'react-jsx-runtime', 'wp-element'),
             ECHOADS_PLUGIN_VERSION,
             true
         );

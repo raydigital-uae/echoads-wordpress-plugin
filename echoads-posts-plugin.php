@@ -5,7 +5,7 @@
 x-release-please-start-version
  * Version:           1.6.2
 x-release-please-end
- * Requires at least: 5.6
+ * Requires at least: 6.6
  * Requires PHP:      7.4
  * Author:            Hussein Shaltout
  * License:           GPLv2 or later
