@@ -20,6 +20,7 @@ Features:
 
 * Audio is generated automatically when a post is published.
 * "Generate", "Regenerate", "Check status" and "Preview" controls in the post editor sidebar.
+* An audio status icon for every post on the All Posts screen, and a "Generate audio" button in Quick Edit for posts without audio.
 * Player placement above or below the article, and a custom background color.
 * Player language and right-to-left layout follow your EchoAds account settings.
 * Works without WP-Cron: if your host blocks it, the editor checks the audio status when you open the post.
@@ -38,7 +39,9 @@ Data is sent to the EchoAds API (the Base URL set in Settings > EchoAds) in thes
 * **When a visitor views a post that has audio:** the visitor's browser loads the player settings and the audio and ad URLs for that post from the EchoAds API, then plays the audio files from EchoAds storage. The request includes the post ID, your site's API key and a visitor identifier.
 * **When a visitor plays audio:** the browser reports play progress for the ads (ad ID, play position, ad slot, post ID, a per-tab play session ID and the visitor identifier) so that plays can be counted and billed.
 
-EchoAds Terms of Service: TODO-terms-url
+The visitor identifier is calculated in the visitor's browser from browser and device characteristics by the open-source FingerprintJS library, which is included in the plugin. It is sent only to EchoAds, which uses it to avoid repeating an ad a visitor has already heard on the same post and to count unique listeners. FingerprintJS stores nothing in the browser. The player keeps the play session ID in the browser's session storage, which is cleared when the tab is closed. Depending on where your visitors are, privacy laws such as the GDPR may require you to mention this in your site's privacy policy or to ask for consent.
+
+EchoAds Terms of Service: https://rc.mediaoutlet.echoads.advertonclick.com/terms-and-conditions
 EchoAds Privacy Policy: TODO-privacy-url
 
 == Installation ==
@@ -73,6 +76,16 @@ The player script in `assets/dist/` is built from the TypeScript and React sourc
 
 == Changelog ==
 
+= 1.7.0 =
+* New: the All Posts screen shows each post's audio status, and Quick Edit has a Generate audio button for posts without audio.
+* New: ready for the WordPress.org plugin directory, with translatable strings, escaped output, sanitized settings, uninstall cleanup and the player's source code included.
+* Change: requires WordPress 6.6 or later. The player now uses the React that ships with WordPress, which makes its script about 75% smaller.
+* Change: settings are stored under new names. Existing settings are copied over automatically when you update.
+* Change: debug logging only runs when WP_DEBUG is on, and no longer logs post content or API responses.
+
+= 1.6.2 =
+* Fix: the player uses FingerprintJS 5, which is MIT licensed, and no longer sends usage statistics to FingerprintJS's servers.
+
 = 1.6.1 =
 * Fix: audio generation and the player are more reliable, and no longer depend on WP-Cron.
 
@@ -81,3 +94,8 @@ The player script in `assets/dist/` is built from the TypeScript and React sourc
 
 = 1.5.3 =
 * Fix: queued posts are sent when WP-Cron can't run.
+
+== Upgrade Notice ==
+
+= 1.7.0 =
+Requires WordPress 6.6 or later. Your EchoAds settings are kept.
