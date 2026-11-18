@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.7.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.6.2...v1.7.0) (2026-11-18)
+
+
+### ✨ Features
+
+* prepare plugin for the WordPress.org directory ([93efd02](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/93efd02b0b4dc1dd4f4beddb42b1524a84da81fe))
+* show EchoAds audio status on All Posts and generate from Quick Edit ([2be0619](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/2be06199002042619cd64bde40c7661563406905))
+* show EchoAds audio status on All Posts and generate from Quick Edit ([f6599f7](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/f6599f74a0184930b486a6189a41002e4d6f7c9f))
+
+
+### 🐛 Bug Fixes
+
+* load the player with WordPress's React instead of bundling it ([9b1910e](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/9b1910eb7920c482a3ddf814086ce091a2bce265))
+* load the player with WordPress's React instead of bundling it ([120fe97](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/120fe97323e3fb5a084ee8cc597250be8e019d9c))
+
 ## [1.6.2](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.6.1...v1.6.2) (2026-11-18)
 
 
