@@ -102,7 +102,7 @@ React mounts into the wrapper and renders the entire player UI.
 
 ## Dependencies
 
-- **React 18.2.0** - UI library
+- **React 18** - UI library. The WordPress build uses the React that WordPress ships (WordPress 6.6+ has 18.3). Only the standalone build bundles React.
 - **@fingerprintjs/fingerprintjs 5.x** (MIT since 5.0.0) - Visitor identification (bundled, no CDN)
 - **Vite 5.1.0** - Build tool
 - **TypeScript 5.2.2** - Type safety
@@ -125,5 +125,7 @@ If you need to rollback to the vanilla JS version:
 
 - The built files in `assets/dist/` are gitignored. Run `npm run build` after pulling changes.
 - CSS is imported in `src/main.tsx` and bundled by Vite.
-- The bundle size is larger (516KB) due to React, but gzips to 168KB.
+- There are two builds of the player:
+  - `bun run build` writes the WordPress plugin's copy to `assets/dist/`. It loads React from WordPress's `react`, `react-jsx-runtime` and `wp-element` scripts, because WordPress.org's Plugin Check rejects plugins that bundle React. The output is about 49KB (21KB gzipped).
+  - `bun run build:standalone` writes a copy with React bundled in to `build/standalone/`, for pages without WordPress. The Drupal module loads this copy from EchoAds's storage bucket. Never put it in the plugin zip. The release workflow attaches it to each GitHub release as `echoads-player-standalone-X.zip`.
 - No jQuery dependency anymore - all AJAX uses native `fetch()`.

@@ -65,14 +65,32 @@ jobs:
           cp -r src package.json vite.config.ts tsconfig.json tsconfig.node.json dist/echoads-audio-player/
           find dist/echoads-audio-player -name '.DS_Store' -delete
 
+          # WordPress.org's Plugin Check rejects a bundled React: the plugin's player must use WordPress's.
+          if grep -q '@license React' dist/echoads-audio-player/assets/dist/echoads-audio-player.js; then
+            echo "The plugin's player bundle includes React; it must use WordPress's (see vite.config.ts)." >&2
+            exit 1
+          fi
+
           # Create the zip file
           cd dist
           zip -r echoads-audio-player-${{ needs.release-please.outputs.version }}.zip echoads-audio-player
 
-      - name: Upload release asset
+      # The copy EchoAds hosts for the Drupal module (storage bucket, player/v1/) bundles React,
+      # so it is built separately and never goes into the plugin zip.
+      - name: Build standalone player
+        run: |
+          bun run build:standalone
+          mkdir -p dist/echoads-player-standalone
+          cp build/standalone/echoads-audio-player.js build/standalone/echoads-audio-player.css dist/echoads-player-standalone/
+          cd dist
+          zip -r echoads-player-standalone-${{ needs.release-please.outputs.version }}.zip echoads-player-standalone
+
+      - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.release-please.outputs.tag_name }}
-          files: dist/echoads-audio-player-${{ needs.release-please.outputs.version }}.zip
+          files: |
+            dist/echoads-audio-player-${{ needs.release-please.outputs.version }}.zip
+            dist/echoads-player-standalone-${{ needs.release-please.outputs.version }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
