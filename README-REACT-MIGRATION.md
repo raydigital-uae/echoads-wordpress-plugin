@@ -103,7 +103,7 @@ React mounts into the wrapper and renders the entire player UI.
 ## Dependencies
 
 - **React 18.2.0** - UI library
-- **@fingerprintjs/fingerprintjs 4.2.0** - Visitor identification (bundled, no CDN)
+- **@fingerprintjs/fingerprintjs 5.x** (MIT since 5.0.0) - Visitor identification (bundled, no CDN)
 - **Vite 5.1.0** - Build tool
 - **TypeScript 5.2.2** - Type safety
 
