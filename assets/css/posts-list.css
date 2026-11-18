@@ -1,0 +1,53 @@
+/* Posts > All Posts: EchoAds audio status column and Quick Edit box. */
+
+.fixed .column-echoads_audio {
+    width: 2.5em;
+}
+
+@media screen and (min-width: 783px) {
+    .column-echoads_audio {
+        text-align: center;
+    }
+}
+
+.echoads-audio-status {
+    display: inline-block;
+    cursor: help;
+}
+
+/* Icon colours keep at least 3:1 contrast on the list's white and striped rows. */
+.echoads-audio-status--ready .dashicons {
+    color: #008a20;
+}
+
+.echoads-audio-status--generating .dashicons {
+    color: #2271b1;
+}
+
+.echoads-audio-status--failed .dashicons {
+    color: #d63638;
+}
+
+.echoads-audio-status--none .dashicons {
+    color: #787c82;
+}
+
+.echoads-quick-edit .echoads-quick-edit-status,
+.echoads-quick-edit .echoads-quick-edit-actions,
+.echoads-quick-edit .echoads-quick-edit-message {
+    margin: 0.5em 0 0;
+}
+
+.echoads-quick-edit .spinner {
+    float: none;
+    margin: 4px 0 0 6px;
+    vertical-align: top;
+}
+
+.echoads-quick-edit-message.is-success {
+    color: #008a20;
+}
+
+.echoads-quick-edit-message.is-error {
+    color: #d63638;
+}
