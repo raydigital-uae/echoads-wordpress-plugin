@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.6.2](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.6.1...v1.6.2) (2026-11-18)
+
+
+### 🐛 Bug Fixes
+
+* keep FingerprintJS's MIT notice in the player bundle and turn off its stats ping ([42b89cc](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/42b89cc07e63a565ce46a9a609fb4d85a41c7574))
+* use MIT-licensed FingerprintJS 5 in the audio player ([f40efef](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/f40efef2f156e8347905b7806e3825906323a947))
+* use MIT-licensed FingerprintJS 5 in the audio player ([fc20071](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/fc20071f18a98d99101a718b2231c84b1b4c7e5e))
+
 ## [1.6.1](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.6.0...v1.6.1) (2026-11-14)
 
 
