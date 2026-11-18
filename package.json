@@ -1,6 +1,6 @@
 {
   "name": "echoads-audio-player",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "EchoAds Audio Player",
   "type": "module",
   "scripts": {

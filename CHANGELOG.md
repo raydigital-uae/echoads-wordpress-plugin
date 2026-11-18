@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.7.1](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.7.0...v1.7.1) (2026-11-18)
+
+
+### 🐛 Bug Fixes
+
+* complete the readme for the WordPress.org submission ([69cccae](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/69cccae294ff78a6f091196c9763f30f99f72410))
+
+
+### 📚 Documentation
+
+* update the readme for the WordPress.org submission ([e0738ef](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/e0738ef3d5c053a6ee461d6106bc4357c958d8b4))
+* update the readme for the WordPress.org submission ([d167dba](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/d167dbacdc531b6d3fd625fbf0363d0693fe4139))
+
 ## [1.7.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.6.2...v1.7.0) (2026-11-18)
 
 
