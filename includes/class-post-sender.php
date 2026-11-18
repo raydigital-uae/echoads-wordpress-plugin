@@ -169,6 +169,12 @@ class EchoAds_Post_Sender {
             return;
         }
 
+        // edit_posts above is site-wide; this stops a contributor starting generation for someone else's post.
+        if ( ! current_user_can( 'edit_post', $post_id ) ) {
+            wp_send_json_error( array( 'message' => __( 'You are not allowed to generate audio for this post.', 'echoads-audio-player' ) ) );
+            return;
+        }
+
         // Check if this is a regeneration request
         $is_regenerate = isset( $_POST['regenerate'] ) && $_POST['regenerate'] === 'true';
 
