@@ -28,6 +28,10 @@ jobs:
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      # Lets the job sign in to Google Cloud without a stored key (Workload Identity Federation).
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -94,3 +98,20 @@ jobs:
             dist/echoads-player-standalone-${{ needs.release-please.outputs.version }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Publishes the standalone player to player/<version>/ and player/v<major>/ in the
+      # public bucket the Drupal module loads it from. Only this repo's master branch can
+      # use this identity (see the provider's attribute condition in Google Cloud).
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: projects/119965281608/locations/global/workloadIdentityPools/github/providers/echoads-wordpress-plugin
+          service_account: player-release@echoads.iam.gserviceaccount.com
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Upload standalone player for Drupal
+        env:
+          VERSION: ${{ needs.release-please.outputs.version }}
+        run: scripts/upload-player.sh "$VERSION" build/standalone
