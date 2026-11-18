@@ -1,5 +1,5 @@
 === EchoAds Audio Player ===
-Contributors: TODO-wporg-username
+Contributors: amirhamdani
 Tags: audio, text to speech, podcast, audio ads, monetization
 Requires at least: 6.6
 Tested up to: 7.1
@@ -42,7 +42,6 @@ Data is sent to the EchoAds API (the Base URL set in Settings > EchoAds) in thes
 The visitor identifier is calculated in the visitor's browser from browser and device characteristics by the open-source FingerprintJS library, which is included in the plugin. It is sent only to EchoAds, which uses it to avoid repeating an ad a visitor has already heard on the same post and to count unique listeners. FingerprintJS stores nothing in the browser. The player keeps the play session ID in the browser's session storage, which is cleared when the tab is closed. Depending on where your visitors are, privacy laws such as the GDPR may require you to mention this in your site's privacy policy or to ask for consent.
 
 EchoAds Terms of Service: https://rc.mediaoutlet.echoads.advertonclick.com/terms-and-conditions
-EchoAds Privacy Policy: TODO-privacy-url
 
 == Installation ==
 
@@ -75,6 +74,9 @@ Yes. The audio and ad links are loaded in the visitor's browser on every page vi
 The player script in `assets/dist/` is built from the TypeScript and React source in `src/`, which is included in the plugin. To rebuild it, run `npm install` and then `npm run build` (or `bun install` and `bun run build`). The player uses the copy of React that ships with WordPress, and does not bundle its own.
 
 == Changelog ==
+
+= 1.7.1 =
+* Readme: completed for the WordPress.org plugin directory.
 
 = 1.7.0 =
 * New: the All Posts screen shows each post's audio status, and Quick Edit has a Generate audio button for posts without audio.
