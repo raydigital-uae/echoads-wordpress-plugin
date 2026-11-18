@@ -34,7 +34,9 @@ let visitorIdPromise: Promise<string | null> | null = null
 
 export const getVisitorId = (): Promise<string | null> => {
   if (visitorIdPromise === null) {
-    visitorIdPromise = FingerprintJS.load()
+    // monitoring: false stops FingerprintJS from sending its own usage-stats
+    // request to openfpcdn.io, so the player only talks to EchoAds.
+    visitorIdPromise = FingerprintJS.load({ monitoring: false })
       .then((agent) => {
         return agent.get()
       })
