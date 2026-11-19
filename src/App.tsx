@@ -7,6 +7,7 @@ import { useAudioPlayer } from './hooks/useAudioPlayer'
 import { useAudioUrls } from './hooks/useAudioUrls'
 import { useTracking } from './hooks/useTracking'
 import { getOrCreatePlaySessionId } from './lib/session'
+import { isRtlLanguage, resolvePlayerLanguage } from './lib/language'
 import type { AudioData } from './types'
 
 interface AudioPlayerProps {
@@ -25,9 +26,12 @@ export const AudioPlayer = ({ audioData, bgColor }: AudioPlayerProps) => {
   )
   const { audioData: resolvedAudioData, isLoading: isAudioUrlsLoading } =
     useAudioUrls(audioData)
-  const langCode = config?.language?.code || 'en'
+  const langCode = resolvePlayerLanguage(
+    audioData.language,
+    config?.language?.code
+  )
   const translations = useTranslations(langCode)
-  const isRtl = langCode.toLowerCase() === 'ar'
+  const isRtl = isRtlLanguage(langCode)
 
   const {
     audioRef,

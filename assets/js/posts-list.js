@@ -44,22 +44,21 @@
         return text;
     }
 
-    // Shows the row as queued without reloading the list; the next page load reads the saved meta.
-    function markRowQueued(postId) {
-        var queued = settings.queued;
+    // Updates the row's icon without reloading the list; the next page load reads the saved meta.
+    function markRow(postId, status) {
         var $icon = statusIcon(postId);
         $icon
             .removeClass(function (index, classes) {
                 return (classes.match(/echoads-audio-status--\S+/g) || []).join(' ');
             })
-            .addClass('echoads-audio-status--' + queued.state)
+            .addClass('echoads-audio-status--' + status.state)
             .attr({
-                'data-echoads-state': queued.state,
+                'data-echoads-state': status.state,
                 'data-echoads-action': '',
-                title: queued.label
+                title: status.label
             });
-        $icon.find('.dashicons').attr('class', 'dashicons ' + queued.icon);
-        $icon.find('.screen-reader-text').text(queued.label);
+        $icon.find('.dashicons').attr('class', 'dashicons ' + status.icon);
+        $icon.find('.screen-reader-text').text(status.label);
     }
 
     function fillQuickEdit(postId) {
@@ -113,12 +112,18 @@
         })
             .done(function (response) {
                 if (response && response.success) {
-                    markRowQueued(postId);
+                    markRow(postId, settings.queued);
                     $box.find('.echoads-quick-edit-actions').hide();
                     $box.find('.echoads-quick-edit-status').text(settings.queued.label);
                     showMessage($message, i18n.started, 'success');
                 } else {
-                    showMessage($message, errorText(response && response.data), 'error');
+                    var data = response && response.data;
+                    // E.g. the post's language is not set up in EchoAds: the row shows that right away.
+                    if (data && data.status && data.status.state) {
+                        markRow(postId, data.status);
+                        $box.find('.echoads-quick-edit-status').text(data.status.label);
+                    }
+                    showMessage($message, errorText(data), 'error');
                     $button.prop('disabled', false);
                 }
             })

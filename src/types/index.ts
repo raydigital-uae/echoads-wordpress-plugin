@@ -12,6 +12,8 @@ export interface AudioData {
   articleAudioId: string | null
   articleExternalId: string
   pluginVersion: string
+  // The post's language ('ar', 'en') on a multilingual site; '' or missing otherwise.
+  language?: string
 }
 
 export interface PlayerConfig {

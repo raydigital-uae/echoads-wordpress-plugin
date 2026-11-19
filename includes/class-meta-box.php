@@ -32,8 +32,20 @@ class EchoAds_Meta_Box {
         $has_config = ! empty( $api_key ) && ! empty( $endpoint );
 
         wp_nonce_field( 'echoads_generate_audio', 'echoads_generate_audio_nonce' );
+        $post_language = EchoAds_Language::get_post_language( $post->ID );
         ?>
         <div id="echoads-meta-box">
+            <?php if ( '' !== $post_language ) : ?>
+                <p class="echoads-post-language">
+                    <?php
+                    printf(
+                        /* translators: %s: language name, for example "English". */
+                        esc_html__( 'Language: %s', 'echoads-audio-player' ),
+                        '<strong>' . esc_html( EchoAds_Language::get_language_name( $post_language ) ) . '</strong>'
+                    );
+                    ?>
+                </p>
+            <?php endif; ?>
             <?php if ( ! $has_config ) : ?>
                 <div class="echoads-notice echoads-notice-warning">
                     <p><strong><?php esc_html_e( 'Configuration Required', 'echoads-audio-player' ); ?></strong></p>
@@ -76,6 +88,14 @@ class EchoAds_Meta_Box {
                 </button>
                 <button type="button" id="echoads-regenerate-btn" class="button button-secondary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="width: 100%;">
                     <?php esc_html_e( 'Regenerate Audio', 'echoads-audio-player' ); ?>
+                </button>
+            <?php elseif ( EchoAds_Language::STATUS_NOT_SET_UP === $audio_status ) : ?>
+                <div class="echoads-notice echoads-notice-warning">
+                    <p><strong><?php esc_html_e( 'Language not set up in EchoAds', 'echoads-audio-player' ); ?></strong></p>
+                    <p><?php echo esc_html( EchoAds_Post_Sender::get_not_set_up_message( $post->ID ) ); ?></p>
+                </div>
+                <button type="button" id="echoads-regenerate-btn" class="button button-secondary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="width: 100%;">
+                    <?php esc_html_e( 'Generate Audio', 'echoads-audio-player' ); ?>
                 </button>
             <?php elseif ( $audio_requested ) : ?>
                 <?php if ( $audio_status === 'FAILED' || $audio_status === 'SKIPPED' ) : ?>

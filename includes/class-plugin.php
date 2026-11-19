@@ -22,6 +22,7 @@ class EchoAds_Plugin {
 
     private function load_dependencies() {
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-settings.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-language.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-post-sender.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-audio-player.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-meta-box.php';
