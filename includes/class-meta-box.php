@@ -89,6 +89,14 @@ class EchoAds_Meta_Box {
                 <button type="button" id="echoads-regenerate-btn" class="button button-secondary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="width: 100%;">
                     <?php esc_html_e( 'Regenerate Audio', 'echoads-audio-player' ); ?>
                 </button>
+            <?php elseif ( EchoAds_Post_Sender::STATUS_NOT_FOUND === $audio_status ) : ?>
+                <div class="echoads-notice echoads-notice-warning">
+                    <p><strong><?php esc_html_e( 'No audio in EchoAds for this post', 'echoads-audio-player' ); ?></strong></p>
+                    <p><?php echo esc_html( EchoAds_Post_Sender::get_not_found_message( $post->ID ) ); ?></p>
+                </div>
+                <button type="button" id="echoads-regenerate-btn" class="button button-primary" data-post-id="<?php echo esc_attr( $post->ID ); ?>" style="width: 100%;">
+                    <?php esc_html_e( 'Generate Audio', 'echoads-audio-player' ); ?>
+                </button>
             <?php elseif ( EchoAds_Language::STATUS_NOT_SET_UP === $audio_status ) : ?>
                 <div class="echoads-notice echoads-notice-warning">
                     <p><strong><?php esc_html_e( 'Language not set up in EchoAds', 'echoads-audio-player' ); ?></strong></p>

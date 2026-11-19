@@ -29,8 +29,9 @@ class EchoAds_Audio_Player
             // hidden until it exists, so a page cached before generation finished still gets the player.
             $sent_to_echoads = get_post_meta($post->ID, '_echoads_audio_generated', true)
                 || get_post_meta($post->ID, '_echoads_audio_requested', true);
-            // EchoAds has no website for this post's language: there is no audio to load.
-            if (EchoAds_Language::STATUS_NOT_SET_UP === get_post_meta($post->ID, '_echoads_audio_status', true)) {
+            // EchoAds has no website for this post's language, or no audio for the post there: nothing to load.
+            $audio_status = get_post_meta($post->ID, '_echoads_audio_status', true);
+            if (in_array($audio_status, array(EchoAds_Language::STATUS_NOT_SET_UP, EchoAds_Post_Sender::STATUS_NOT_FOUND), true)) {
                 $sent_to_echoads = false;
             }
 

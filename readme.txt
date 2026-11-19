@@ -80,6 +80,9 @@ The player script in `assets/dist/` is built from the TypeScript and React sourc
 
 == Changelog ==
 
+= 1.8.1 =
+* Fix: a post whose audio EchoAds can't find, for example an English post sent before English was added in EchoAds, no longer stays "in progress" with "Failed to fetch audio status". It shows "No audio in EchoAds for this post" with a Generate Audio button.
+
 = 1.8.0 =
 * New: multilingual sites. With Polylang or WPML, each post is sent with its language, and EchoAds handles each language as its own website under the same API key, with its own voice and ads.
 * New: the player shows in the post's language, right to left for Arabic, Hebrew, Persian and Urdu.
