@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.1](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.8.0...v1.8.1) (2026-11-19)
+
+
+### 🐛 Bug Fixes
+
+* offer Generate Audio when EchoAds has no audio for a post ([661b16e](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/661b16e11f0b1e4bfade82017ef89ebbdfe426bf))
+* offer Generate Audio when EchoAds has no audio for a post ([5168f01](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/5168f0117b2230e87048c082810a5287b5308994))
+
 ## [1.8.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.7.1...v1.8.0) (2026-11-19)
 
 
