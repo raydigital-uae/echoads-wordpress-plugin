@@ -10,6 +10,10 @@ class EchoAds_Post_Sender {
     const STATUS_POLL_INTERVAL = 60;
     const STATUS_POLL_MAX_ATTEMPTS = 60;
 
+    // EchoAds has no audio for this post (on the website for its language), for example a post
+    // sent before its language was added in EchoAds, whose audio sits on another language's website.
+    const STATUS_NOT_FOUND = 'NOT_FOUND';
+
     public function __construct() {
         add_action( 'wp_ajax_echoads_generate_audio', array( $this, 'handle_ajax_generate_audio' ) );
         add_action( 'wp_ajax_echoads_check_audio_status', array( $this, 'handle_ajax_check_status' ) );
@@ -72,7 +76,7 @@ class EchoAds_Post_Sender {
             self::save_audio_status( $post_id, $status );
         }
 
-        $finished = in_array( $status, array( 'COMPLETED', 'FAILED', 'SKIPPED', EchoAds_Language::STATUS_NOT_SET_UP ), true );
+        $finished = in_array( $status, array( 'COMPLETED', 'FAILED', 'SKIPPED', EchoAds_Language::STATUS_NOT_SET_UP, self::STATUS_NOT_FOUND ), true );
         if ( ! $finished && $attempt < self::STATUS_POLL_MAX_ATTEMPTS ) {
             self::schedule_status_poll( $post_id, $attempt + 1 );
         }
@@ -83,6 +87,9 @@ class EchoAds_Post_Sender {
         if ( $status === 'COMPLETED' ) {
             // Only mark as generated when status is COMPLETED
             update_post_meta( $post_id, '_echoads_audio_generated', current_time( 'mysql' ) );
+        } elseif ( self::STATUS_NOT_FOUND === $status ) {
+            // Any earlier "generated" mark is stale: there is no audio to show or preview.
+            delete_post_meta( $post_id, '_echoads_audio_generated' );
         }
     }
 
@@ -399,6 +406,24 @@ class EchoAds_Post_Sender {
         );
     }
 
+    /**
+     * Explains that EchoAds has no audio for the post, so it has to be generated again.
+     *
+     * @param int $post_id Post ID.
+     * @return string
+     */
+    public static function get_not_found_message( $post_id ) {
+        $code = EchoAds_Language::get_post_language( $post_id );
+        if ( '' === $code ) {
+            return __( 'EchoAds has no audio for this post. Generate the audio to create it.', 'echoads-audio-player' );
+        }
+        return sprintf(
+            /* translators: %s: language name, for example "English". */
+            __( 'EchoAds has no audio for this post in %s. This happens when the post was sent before its language was added in EchoAds. Generate the audio to create it.', 'echoads-audio-player' ),
+            EchoAds_Language::get_language_name( $code )
+        );
+    }
+
     public static function fetch_audio_status( $post_id ) {
         $api_key = EchoAds_Settings::get_api_key();
         $endpoint = EchoAds_Settings::get_endpoint();
@@ -431,6 +456,13 @@ class EchoAds_Post_Sender {
 
         if ( EchoAds_Language::is_not_set_up_response( $response_code, $body ) ) {
             return EchoAds_Language::STATUS_NOT_SET_UP;
+        }
+
+        // The status route exists, so a 404 means EchoAds has no article for this post on the
+        // website for its language: it has to be generated (again) there.
+        if ( 404 === (int) $response_code ) {
+            echoads_log( 'No EchoAds article for post ' . $post_id . ': ' . $body );
+            return self::STATUS_NOT_FOUND;
         }
 
         if ( $response_code < 200 || $response_code >= 300 ) {

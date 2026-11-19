@@ -182,6 +182,9 @@ jQuery(document).ready(function($) {
                         responseDiv.addClass('info').html('<strong>Audio Still Processing</strong><br>' + statusMessage + '<br>Please check again later.').show();
                         button.prop('disabled', false);
                         button.text('Check Audio Article Status');
+                    } else if (status === 'NOT_FOUND') {
+                        responseDiv.addClass('error').html('<strong>No audio in EchoAds for this post</strong><br>It has to be generated again, for example because it was sent before its language was added in EchoAds.').show();
+                        reloadToShowStatus();
                     } else if (status === 'FAILED' || status === 'SKIPPED') {
                         responseDiv.addClass('error').html('<strong>Audio Generation ' + esc(status) + '</strong><br>' + statusMessage + '<br>Audio generation failed. The post will attempt to generate audio again when republished.').show();
                         reloadToShowStatus();

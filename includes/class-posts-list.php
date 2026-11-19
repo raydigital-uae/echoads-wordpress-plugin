@@ -178,7 +178,7 @@ class EchoAds_Posts_List {
             $state = 'generating';
         } elseif ( $generated && 'COMPLETED' === $status ) {
             $state = 'ready';
-        } elseif ( $requested && in_array( $status, array( 'FAILED', 'SKIPPED', EchoAds_Language::STATUS_NOT_SET_UP ), true ) ) {
+        } elseif ( $requested && in_array( $status, array( 'FAILED', 'SKIPPED', EchoAds_Language::STATUS_NOT_SET_UP, EchoAds_Post_Sender::STATUS_NOT_FOUND ), true ) ) {
             $state = 'failed';
         } elseif ( $requested ) {
             // Sent, but no final status saved yet (WP-Cron or the meta box's check updates it).
@@ -217,6 +217,8 @@ class EchoAds_Posts_List {
                 $icon  = 'dashicons-warning';
                 if ( EchoAds_Language::STATUS_NOT_SET_UP === $status ) {
                     $label = __( "This post's language is not set up in EchoAds", 'echoads-audio-player' );
+                } elseif ( EchoAds_Post_Sender::STATUS_NOT_FOUND === $status ) {
+                    $label = __( 'No audio in EchoAds for this post, generate it again', 'echoads-audio-player' );
                 } elseif ( 'SKIPPED' === $status ) {
                     $label = __( 'Audio generation was skipped', 'echoads-audio-player' );
                 } else {
