@@ -5,7 +5,6 @@
 
 ### ✨ Features
 
-* support multilingual sites (Polylang, WPML) with one API key ([72e85b7](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/72e85b75e19053d60a22d721b95238c68b2fbb3f))
 * support multilingual sites (Polylang, WPML) with one API key ([6da7307](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/6da7307599b9c83d8b754f4116a1fa5af2cbd486))
 
 

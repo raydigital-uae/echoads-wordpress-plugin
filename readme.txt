@@ -80,6 +80,13 @@ The player script in `assets/dist/` is built from the TypeScript and React sourc
 
 == Changelog ==
 
+= 1.8.0 =
+* New: multilingual sites. With Polylang or WPML, each post is sent with its language, and EchoAds handles each language as its own website under the same API key, with its own voice and ads.
+* New: the player shows in the post's language, right to left for Arabic, Hebrew, Persian and Urdu.
+* New: posts in a language that isn't set up in EchoAds show a clear notice in the editor and on All Posts, instead of getting audio in the wrong voice.
+* New: Settings > EchoAds lists the languages found on the site.
+* Fix: screen readers announce the player's track and status in the player's language.
+
 = 1.7.1 =
 * Readme: completed for the WordPress.org plugin directory.
 
@@ -103,6 +110,9 @@ The player script in `assets/dist/` is built from the TypeScript and React sourc
 * Fix: queued posts are sent when WP-Cron can't run.
 
 == Upgrade Notice ==
+
+= 1.8.0 =
+Adds multilingual support. On a multilingual site, add each language in your EchoAds dashboard so its posts get audio.
 
 = 1.7.0 =
 Requires WordPress 6.6 or later. Your EchoAds settings are kept.
