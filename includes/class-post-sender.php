@@ -53,7 +53,8 @@ class EchoAds_Post_Sender {
             self::schedule_status_poll( $post_id );
         } else {
             // Lets the editor see the failure and regenerate, instead of the post sitting in PENDING forever.
-            update_post_meta( $post_id, '_echoads_audio_status', 'FAILED' );
+            $status = empty( $result['language_not_set_up'] ) ? 'FAILED' : EchoAds_Language::STATUS_NOT_SET_UP;
+            update_post_meta( $post_id, '_echoads_audio_status', $status );
         }
     }
 
@@ -71,7 +72,7 @@ class EchoAds_Post_Sender {
             self::save_audio_status( $post_id, $status );
         }
 
-        $finished = in_array( $status, array( 'COMPLETED', 'FAILED', 'SKIPPED' ), true );
+        $finished = in_array( $status, array( 'COMPLETED', 'FAILED', 'SKIPPED', EchoAds_Language::STATUS_NOT_SET_UP ), true );
         if ( ! $finished && $attempt < self::STATUS_POLL_MAX_ATTEMPTS ) {
             self::schedule_status_poll( $post_id, $attempt + 1 );
         }
@@ -235,6 +236,15 @@ class EchoAds_Post_Sender {
             self::schedule_status_poll( $post_id );
             echoads_log( 'Post meta updated successfully' );
             wp_send_json_success( array( 'message' => 'Audio generation initiated successfully' ) );
+        } elseif ( ! empty( $result['language_not_set_up'] ) ) {
+            update_post_meta( $post_id, '_echoads_audio_requested', current_time( 'mysql' ) );
+            update_post_meta( $post_id, '_echoads_audio_status', EchoAds_Language::STATUS_NOT_SET_UP );
+            wp_send_json_error( array(
+                'message'             => self::get_not_set_up_message( $post_id ),
+                'language_not_set_up' => true,
+                // Lets the All Posts list update the row's icon without a reload.
+                'status'              => class_exists( 'EchoAds_Posts_List' ) ? EchoAds_Posts_List::get_audio_status( $post_id ) : null,
+            ) );
         } else {
             echoads_log( 'send_request_sync returned failure, sending error response with details' );
             
@@ -260,6 +270,7 @@ class EchoAds_Post_Sender {
     }
 
     private function send_request_sync( $endpoint, $api_key, $dto, $post_id ) {
+        $endpoint = EchoAds_Language::add_to_url( $endpoint, $post_id );
         $body = wp_json_encode( $dto );
 
         echoads_log( 'Sending post ' . $post_id . ' (' . strlen( $body ) . ' bytes)' );
@@ -337,7 +348,8 @@ class EchoAds_Post_Sender {
                 'response_code' => $response_code,
                 'response_body' => $response_body,
                 'response_headers' => $response_headers,
-                'error_message' => $is_success ? '' : 'HTTP ' . $response_code . ' response received'
+                'error_message' => $is_success ? '' : 'HTTP ' . $response_code . ' response received',
+                'language_not_set_up' => EchoAds_Language::is_not_set_up_response( $response_code, $response_body ),
             );
         }
     }
@@ -372,6 +384,21 @@ class EchoAds_Post_Sender {
         ) );
     }
 
+    /**
+     * Explains that EchoAds has no website for the post's language yet.
+     *
+     * @param int $post_id Post ID.
+     * @return string
+     */
+    public static function get_not_set_up_message( $post_id ) {
+        $code = EchoAds_Language::get_post_language( $post_id );
+        return sprintf(
+            /* translators: %s: language name, for example "English". */
+            __( '%s is not set up in EchoAds for this website, so no audio was generated. Add the language to your website in the EchoAds dashboard, then generate the audio again.', 'echoads-audio-player' ),
+            '' !== $code ? EchoAds_Language::get_language_name( $code ) : __( 'This language', 'echoads-audio-player' )
+        );
+    }
+
     public static function fetch_audio_status( $post_id ) {
         $api_key = EchoAds_Settings::get_api_key();
         $endpoint = EchoAds_Settings::get_endpoint();
@@ -382,7 +409,7 @@ class EchoAds_Post_Sender {
         }
 
         // Construct status endpoint URL
-        $status_endpoint = rtrim( $endpoint, '/' ) . '/' . $post_id . '/status';
+        $status_endpoint = EchoAds_Language::add_to_url( rtrim( $endpoint, '/' ) . '/' . $post_id . '/status', $post_id );
 
         $args = array(
             'headers' => array(
@@ -401,6 +428,10 @@ class EchoAds_Post_Sender {
         $response_code = wp_remote_retrieve_response_code( $response );
         $body = wp_remote_retrieve_body( $response );
         $status_info = json_decode( $body, true );
+
+        if ( EchoAds_Language::is_not_set_up_response( $response_code, $body ) ) {
+            return EchoAds_Language::STATUS_NOT_SET_UP;
+        }
 
         if ( $response_code < 200 || $response_code >= 300 ) {
             echoads_log( 'Failed to fetch audio status. Response code: ' . $response_code . ', Body: ' . $body );

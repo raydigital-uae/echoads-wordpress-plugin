@@ -3,10 +3,12 @@ import { ListenButton } from './components/ListenButton'
 import { PlayerControls } from './components/PlayerControls'
 import { useConfig } from './hooks/useConfig'
 import { useTranslations } from './hooks/useTranslations'
+import { translateStatus, translateTrackName } from './constants/translations'
 import { useAudioPlayer } from './hooks/useAudioPlayer'
 import { useAudioUrls } from './hooks/useAudioUrls'
 import { useTracking } from './hooks/useTracking'
 import { getOrCreatePlaySessionId } from './lib/session'
+import { isRtlLanguage, resolvePlayerLanguage } from './lib/language'
 import type { AudioData } from './types'
 
 interface AudioPlayerProps {
@@ -25,9 +27,12 @@ export const AudioPlayer = ({ audioData, bgColor }: AudioPlayerProps) => {
   )
   const { audioData: resolvedAudioData, isLoading: isAudioUrlsLoading } =
     useAudioUrls(audioData)
-  const langCode = config?.language?.code || 'en'
+  const langCode = resolvePlayerLanguage(
+    audioData.language,
+    config?.language?.code
+  )
   const translations = useTranslations(langCode)
-  const isRtl = langCode.toLowerCase() === 'ar'
+  const isRtl = isRtlLanguage(langCode)
 
   const {
     audioRef,
@@ -132,9 +137,9 @@ export const AudioPlayer = ({ audioData, bgColor }: AudioPlayerProps) => {
 
       {/* Hidden elements for screen readers */}
       <span className='sr-only'>
-        {tracks[currentTrack]?.name || 'Audio Player'}
+        {translateTrackName(tracks[currentTrack]?.name, translations)}
       </span>
-      <span className='sr-only'>{status}</span>
+      <span className='sr-only'>{translateStatus(status, translations)}</span>
     </div>
   )
 }

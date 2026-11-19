@@ -22,7 +22,8 @@ Features:
 * "Generate", "Regenerate", "Check status" and "Preview" controls in the post editor sidebar.
 * An audio status icon for every post on the All Posts screen, and a "Generate audio" button in Quick Edit for posts without audio.
 * Player placement above or below the article, and a custom background color.
-* Player language and right-to-left layout follow your EchoAds account settings.
+* Multilingual sites (Polylang or WPML): each language is handled as its own EchoAds website, with its own voice and ads, under one API key, and the player shows in the post's language (right to left for Arabic).
+* Player language and right-to-left layout follow your EchoAds account settings on single-language sites.
 * Works without WP-Cron: if your host blocks it, the editor checks the audio status when you open the post.
 
 An EchoAds publisher account and API key are required. The plugin does nothing until an API key is entered.
@@ -31,7 +32,7 @@ An EchoAds publisher account and API key are required. The plugin does nothing u
 
 This plugin relies on the EchoAds service to generate audio and serve the player and its ads. It cannot work without it.
 
-Data is sent to the EchoAds API (the Base URL set in Settings > EchoAds) in these cases:
+Data is sent to the EchoAds API (the Base URL set in Settings > EchoAds) in these cases. On a multilingual site (Polylang or WPML), every request also includes the post's language code (for example `ar` or `en`), so EchoAds uses the website set up for that language.
 
 * **When a post is published, or when an editor clicks Generate or Regenerate audio:** the post ID, title, content, excerpt, slug, permalink, author display name, tags, category names, featured image URL, publish date and publish status, together with your API key.
 * **When an editor opens a post or clicks Check status, and every minute through WP-Cron while audio is generating:** the post ID and your API key, to read the audio status.
@@ -64,6 +65,10 @@ Audio generation takes a few minutes. Open the post in the editor to see its sta
 = Which posts get audio? =
 
 Standard posts, when they are first published. Pages and custom post types are not sent. Posts published before the plugin was set up can be sent with the Generate Audio button.
+
+= Does the plugin work with multilingual sites? =
+
+Yes, with Polylang or WPML. Each language is sent to EchoAds as a website of its own, with its own voice, ads and statistics, using the same API key. In your EchoAds dashboard, add every language of your site to the website; Settings > EchoAds lists the languages the plugin found. Posts in a language that is not set up get no audio, and the post editor says so. Other translation plugins can supply a post's language with the `echoads_post_language` filter.
 
 = Does the plugin work with caching plugins? =
 

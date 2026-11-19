@@ -29,6 +29,10 @@ class EchoAds_Audio_Player
             // hidden until it exists, so a page cached before generation finished still gets the player.
             $sent_to_echoads = get_post_meta($post->ID, '_echoads_audio_generated', true)
                 || get_post_meta($post->ID, '_echoads_audio_requested', true);
+            // EchoAds has no website for this post's language: there is no audio to load.
+            if (EchoAds_Language::STATUS_NOT_SET_UP === get_post_meta($post->ID, '_echoads_audio_status', true)) {
+                $sent_to_echoads = false;
+            }
 
             if ($sent_to_echoads) {
                 $audio_player = $this->generate_audio_player($post->ID);
@@ -70,6 +74,7 @@ class EchoAds_Audio_Player
     {
         // Add externalId query parameter to the endpoint URL
         $audio_endpoint = add_query_arg('externalId', strval($post_id), $audio_endpoint);
+        $audio_endpoint = EchoAds_Language::add_to_url($audio_endpoint, $post_id);
 
         $args = array(
             'headers' => array(
@@ -146,15 +151,21 @@ class EchoAds_Audio_Player
     private function render_audio_player($post_id)
     {
         $unique_id = 'audio-player-' . $post_id;
-        $tracking_endpoint = EchoAds_Settings::get_tracking_endpoint();
+        // On a multilingual site every call carries the post's language, so EchoAds uses the
+        // website (voice, ads, stats) for that language and the player speaks it.
+        $language = EchoAds_Language::get_post_language($post_id);
+        $tracking_endpoint = EchoAds_Language::add_to_url(EchoAds_Settings::get_tracking_endpoint(), $post_id);
         $api_key = EchoAds_Settings::get_api_key();
         $bg_color = EchoAds_Settings::get_player_bg_color();
         $endpoint = EchoAds_Settings::get_endpoint();
 
         // Endpoint already includes the base path, e.g. .../website-articles
-        $config_endpoint = !empty($endpoint) ? rtrim($endpoint, '/') . '/config' : '';
+        $config_endpoint = !empty($endpoint) ? EchoAds_Language::add_to_url(rtrim($endpoint, '/') . '/config', $post_id) : '';
         // The browser fetches the audio links on every load: ads are matched per visitor and must never be cached.
-        $audio_urls_endpoint = add_query_arg('externalId', strval($post_id), EchoAds_Settings::get_audio_endpoint());
+        $audio_urls_endpoint = EchoAds_Language::add_to_url(
+            add_query_arg('externalId', strval($post_id), EchoAds_Settings::get_audio_endpoint()),
+            $post_id
+        );
 
         $audio_data = array(
             'preRoll'             => '',
@@ -170,6 +181,8 @@ class EchoAds_Audio_Player
             'articleAudioId'      => null,
             'articleExternalId'   => strval($post_id),
             'pluginVersion'       => ECHOADS_PLUGIN_VERSION,
+            // The post's language ('ar', 'en'), or '' on a single-language site.
+            'language'            => $language,
         );
 
         if (isset($this->registered_players[$unique_id])) {

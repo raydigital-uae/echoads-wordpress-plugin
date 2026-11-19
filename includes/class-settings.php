@@ -213,6 +213,35 @@ class EchoAds_Settings {
                                 </div>
                             </div>
 
+                            <?php
+                            $multilingual_plugin = EchoAds_Language::get_multilingual_plugin();
+                            $site_languages      = EchoAds_Language::get_site_languages();
+                            ?>
+                            <div class="echoads-form-section echoads-languages">
+                                <h2><?php esc_html_e( 'Languages', 'echoads-audio-player' ); ?></h2>
+                                <?php if ( '' === $multilingual_plugin ) : ?>
+                                    <p><?php esc_html_e( 'No multilingual plugin (Polylang or WPML) is active, so all posts are sent to EchoAds in your website\'s language.', 'echoads-audio-player' ); ?></p>
+                                <?php else : ?>
+                                    <p>
+                                        <?php
+                                        printf(
+                                            /* translators: %s: multilingual plugin name, Polylang or WPML. */
+                                            esc_html__( '%s is active. Each language below is sent to EchoAds as a website of its own, with its own voice, ads and statistics, using this same API key.', 'echoads-audio-player' ),
+                                            esc_html( 'polylang' === $multilingual_plugin ? 'Polylang' : 'WPML' )
+                                        );
+                                        ?>
+                                    </p>
+                                    <?php if ( ! empty( $site_languages ) ) : ?>
+                                        <ul class="echoads-language-list">
+                                            <?php foreach ( $site_languages as $code => $name ) : ?>
+                                                <li><?php echo esc_html( $name ); ?> <code><?php echo esc_html( $code ); ?></code></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    <?php endif; ?>
+                                    <p class="echoads-field-description"><?php esc_html_e( 'In your EchoAds dashboard, open this website and add every language listed here. Posts in a language that is not set up get no audio until it is added.', 'echoads-audio-player' ); ?></p>
+                                <?php endif; ?>
+                            </div>
+
                             <div class="echoads-form-actions">
                                 <button type="submit"
                                         class="echoads-button echoads-button-primary">
