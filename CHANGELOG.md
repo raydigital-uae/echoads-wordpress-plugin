@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.7.1...v1.8.0) (2026-11-19)
+
+
+### ✨ Features
+
+* support multilingual sites (Polylang, WPML) with one API key ([6da7307](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/6da7307599b9c83d8b754f4116a1fa5af2cbd486))
+
+
+### 🐛 Bug Fixes
+
+* read the player's track and status to screen readers in its language ([202f258](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/202f25810a5242b9d3fcc38ccb13318614f695af))
+
 ## [1.7.1](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.7.0...v1.7.1) (2026-11-18)
 
 
