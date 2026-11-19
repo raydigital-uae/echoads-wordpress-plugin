@@ -3,6 +3,7 @@ import { ListenButton } from './components/ListenButton'
 import { PlayerControls } from './components/PlayerControls'
 import { useConfig } from './hooks/useConfig'
 import { useTranslations } from './hooks/useTranslations'
+import { translateStatus, translateTrackName } from './constants/translations'
 import { useAudioPlayer } from './hooks/useAudioPlayer'
 import { useAudioUrls } from './hooks/useAudioUrls'
 import { useTracking } from './hooks/useTracking'
@@ -136,9 +137,9 @@ export const AudioPlayer = ({ audioData, bgColor }: AudioPlayerProps) => {
 
       {/* Hidden elements for screen readers */}
       <span className='sr-only'>
-        {tracks[currentTrack]?.name || 'Audio Player'}
+        {translateTrackName(tracks[currentTrack]?.name, translations)}
       </span>
-      <span className='sr-only'>{status}</span>
+      <span className='sr-only'>{translateStatus(status, translations)}</span>
     </div>
   )
 }

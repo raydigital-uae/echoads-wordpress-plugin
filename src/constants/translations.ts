@@ -19,6 +19,9 @@ export interface Translations {
   statusCheckFailed: string
   statusFailed: string
   statusSkipped: string
+  trackPreRoll: string
+  trackArticle: string
+  trackPostRoll: string
 }
 
 export const TRANSLATIONS: Record<string, Translations> = {
@@ -43,6 +46,9 @@ export const TRANSLATIONS: Record<string, Translations> = {
     statusCheckFailed: 'Status check failed',
     statusFailed: 'Audio generation failed',
     statusSkipped: 'Audio generation skipped',
+    trackPreRoll: 'Pre-roll ad',
+    trackArticle: 'Article audio',
+    trackPostRoll: 'Post-roll ad',
   },
   ar: {
     listenToArticle: 'استمع للخبر الآن',
@@ -65,6 +71,9 @@ export const TRANSLATIONS: Record<string, Translations> = {
     statusCheckFailed: 'فشل التحقق من الحالة',
     statusFailed: 'فشل إنشاء الصوت',
     statusSkipped: 'تم تخطي إنشاء الصوت',
+    trackPreRoll: 'إعلان قبل الخبر',
+    trackArticle: 'الخبر الصوتي',
+    trackPostRoll: 'إعلان بعد الخبر',
   },
 }
 
@@ -82,4 +91,26 @@ export const STATUS_TO_TRANSLATION_KEY: Record<string, keyof Translations> = {
   'Status check failed': 'statusCheckFailed',
   'Audio generation failed': 'statusFailed',
   'Audio generation skipped': 'statusSkipped',
+}
+
+// Track names come from useAudioPlayer in English; screen readers get them in the player's language.
+export const TRACK_NAME_TO_TRANSLATION_KEY: Record<string, keyof Translations> =
+  {
+    'Pre-Roll Ad': 'trackPreRoll',
+    'Article Audio': 'trackArticle',
+    'Post-Roll Ad': 'trackPostRoll',
+  }
+
+export const translateStatus = (status: string, t: Translations): string => {
+  const key = STATUS_TO_TRANSLATION_KEY[status]
+  return key ? t[key] : status
+}
+
+export const translateTrackName = (
+  name: string | undefined,
+  t: Translations
+): string => {
+  if (!name) return t.audioPlayerAria
+  const key = TRACK_NAME_TO_TRANSLATION_KEY[name]
+  return key ? t[key] : name
 }
