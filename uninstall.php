@@ -30,5 +30,7 @@ foreach ( array( '_echoads_audio_generated', '_echoads_audio_requested', '_echoa
     delete_post_meta_by_key( $echoads_meta_key );
 }
 
+delete_transient( 'echoads_server_varnish' );
+
 wp_unschedule_hook( 'echoads_poll_audio_status' );
 wp_unschedule_hook( 'echoads_send_post_data' );

@@ -27,6 +27,11 @@ class EchoAds_Page_Cache {
      */
     private static $purge_all_queued = false;
 
+    /**
+     * Remembers whether the site sits behind the server's Varnish (see server_varnish_active).
+     */
+    const VARNISH_TRANSIENT = 'echoads_server_varnish';
+
     public function __construct() {
         // update_metadata() skips these hooks when the value is unchanged, so routine status
         // polls that come back with the same status purge nothing.
@@ -165,9 +170,12 @@ class EchoAds_Page_Cache {
      * plugin isn't active.
      */
     private static function purge_all_cache_plugins() {
-        // Breeze (Cloudways): its own page cache, Varnish and Cloudflare.
+        // Breeze (Cloudways): its own page cache, Varnish and Cloudflare. Without Breeze,
+        // purge the server's Varnish ourselves.
         if ( class_exists( 'Breeze_PurgeCache' ) ) {
             do_action( 'breeze_clear_all_cache' );
+        } else {
+            self::purge_server_varnish( home_url( '/' ), true );
         }
 
         // LiteSpeed Cache.
@@ -238,6 +246,10 @@ class EchoAds_Page_Cache {
             if ( $url ) {
                 do_action( 'breeze_purge_varnish_urls', array( untrailingslashit( $url ) . '/?breeze' ) );
             }
+        } elseif ( $url ) {
+            // No Breeze: nothing else purges the server's Varnish (Cloudways sites running
+            // another page cache plugin, or none).
+            self::purge_server_varnish( $url, false );
         }
 
         // LiteSpeed Cache.
@@ -288,5 +300,75 @@ class EchoAds_Page_Cache {
         if ( class_exists( 'WpeCommon' ) && method_exists( 'WpeCommon', 'purge_varnish_cache' ) ) {
             WpeCommon::purge_varnish_cache( $post_id );
         }
+    }
+
+    /**
+     * Purges the server's Varnish (Cloudways) the way Breeze does: a request to the Varnish
+     * on this server, with the site's host name. URLPURGE drops one page; PURGE drops the
+     * whole site (Cloudways' Varnish purges everything for the host on PURGE).
+     *
+     * @param string $url The page to purge, or any URL of the site when $all is true.
+     * @param bool   $all Whether to purge every page of the site.
+     */
+    private static function purge_server_varnish( $url, $all ) {
+        if ( ! self::server_varnish_active() ) {
+            return;
+        }
+
+        $parts = wp_parse_url( $url );
+        if ( empty( $parts['host'] ) ) {
+            return;
+        }
+
+        /**
+         * Filters the address of the server's Varnish that EchoAds sends purges to.
+         *
+         * @param string $host Default '127.0.0.1', where Cloudways runs it.
+         */
+        $varnish_host = apply_filters( 'echoads_varnish_host', '127.0.0.1' );
+        $scheme       = isset( $parts['scheme'] ) ? $parts['scheme'] : 'http';
+        $path         = $all ? '/.*' : ( isset( $parts['path'] ) ? $parts['path'] : '/' );
+
+        $response = wp_remote_request(
+            $scheme . '://' . $varnish_host . $path,
+            array(
+                'method'    => $all ? 'PURGE' : 'URLPURGE',
+                'headers'   => array( 'Host' => $parts['host'] ),
+                'sslverify' => false,
+                'blocking'  => false,
+                'timeout'   => 1,
+            )
+        );
+        if ( is_wp_error( $response ) ) {
+            echoads_log( 'Varnish purge failed for ' . $url . ': ' . $response->get_error_message() );
+        }
+    }
+
+    /**
+     * Whether pages of this site are cached by a Varnish on the server. A request that came
+     * through Varnish carries its X-Varnish header (Cloudways sets X-Application to
+     * "varnishpass" when Varnish is turned off for the site). Background requests (WP-Cron,
+     * WP-CLI) may not come through Varnish, so otherwise ask the home page and remember the
+     * answer for 12 hours.
+     */
+    private static function server_varnish_active() {
+        if ( isset( $_SERVER['HTTP_X_VARNISH'] ) ) {
+            $application = isset( $_SERVER['HTTP_X_APPLICATION'] ) ? trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_APPLICATION'] ) ) ) : '';
+            return ! in_array( $application, array( 'varnishpass', 'bypass' ), true );
+        }
+
+        $known = get_transient( self::VARNISH_TRANSIENT );
+        if ( false !== $known ) {
+            return '1' === $known;
+        }
+
+        $response = wp_remote_head( home_url( '/' ), array( 'timeout' => 5 ) );
+        $active   = ! is_wp_error( $response ) && (
+            0 === stripos( (string) wp_remote_retrieve_header( $response, 'cache-provider' ), 'CLOUDWAYS' )
+            || '' !== (string) wp_remote_retrieve_header( $response, 'x-varnish' )
+        );
+        set_transient( self::VARNISH_TRANSIENT, $active ? '1' : '0', 12 * HOUR_IN_SECONDS );
+
+        return $active;
     }
 }
