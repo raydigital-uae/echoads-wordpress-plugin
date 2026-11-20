@@ -225,13 +225,17 @@ class EchoAds_Page_Cache {
      * plugin isn't active.
      */
     private static function purge_cache_plugins( $post_id, $url ) {
-        // Breeze (Cloudways): its own page cache, Cloudflare and the server's Varnish. Its
-        // purge_post_cache action exists only while Breeze's page cache is on; without it,
-        // purge Varnish alone, the way Breeze does.
+        // Breeze (Cloudways): its own page cache and Cloudflare (purge_post_cache, which exists
+        // only while Breeze's page cache is on), then the server's Varnish.
         if ( class_exists( 'Breeze_PurgeCache' ) ) {
             if ( has_action( 'purge_post_cache' ) ) {
                 do_action( 'purge_post_cache', $post_id );
-            } elseif ( $url ) {
+            }
+            // purge_post_cache only queues the Varnish purge on Action Scheduler, and a site
+            // whose queue doesn't run keeps serving the old page from Varnish. Breeze sends the
+            // purge right away when it runs inside its own breeze_purge_varnish_urls action,
+            // so call it through that action. The "?breeze" suffix is Breeze's per-page purge.
+            if ( $url ) {
                 do_action( 'breeze_purge_varnish_urls', array( untrailingslashit( $url ) . '/?breeze' ) );
             }
         }
