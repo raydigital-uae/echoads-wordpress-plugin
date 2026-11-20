@@ -3,7 +3,7 @@
  * Plugin Name:       EchoAds Audio Player
  * Description:       Turns your posts into audio articles with an on-page player and pre-roll and post-roll audio ads, powered by the EchoAds service.
 x-release-please-start-version
- * Version:           1.9.1
+ * Version:           1.9.2
 x-release-please-end
  * Requires at least: 6.6
  * Requires PHP:      7.4
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'ECHOADS_PLUGIN_VERSION', '1.9.1' ); // x-release-please-version
+define( 'ECHOADS_PLUGIN_VERSION', '1.9.2' ); // x-release-please-version
 define( 'ECHOADS_PLUGIN_FILE', __FILE__ );
 
 /**
