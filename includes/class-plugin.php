@@ -24,6 +24,7 @@ class EchoAds_Plugin {
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-settings.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-language.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-post-sender.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-page-cache.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-audio-player.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-meta-box.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-posts-list.php';
@@ -32,6 +33,7 @@ class EchoAds_Plugin {
     private function init_components() {
         new EchoAds_Settings();
         new EchoAds_Post_Sender();
+        new EchoAds_Page_Cache();
         new EchoAds_Audio_Player();
         new EchoAds_Meta_Box();
         if ( is_admin() ) {

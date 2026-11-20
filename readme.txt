@@ -74,6 +74,8 @@ Yes, with Polylang or WPML. Each language is sent to EchoAds as a website of its
 
 Yes. The audio and ad links are loaded in the visitor's browser on every page view, so cached pages still show the latest audio.
 
+When a post's audio status changes (sent, ready, or no longer available), the plugin clears that post's cached page so visitors see the change right away. It works with Breeze (including Cloudways Varnish and Cloudflare), LiteSpeed Cache, WP Rocket, W3 Total Cache, WP Super Cache, WP Fastest Cache, Cache Enabler, Hummingbird, SiteGround Optimizer, Nginx Helper, Proxy Cache Purge and WP Engine. For any other cache, use the `echoads_purge_post_cache` action (post ID, URL) to clear it, or the `echoads_purge_page_cache` filter to turn this off.
+
 == Source code ==
 
 The player script in `assets/dist/` is built from the TypeScript and React source in `src/`, which is included in the plugin. To rebuild it, run `npm install` and then `npm run build` (or `bun install` and `bun run build`). The player uses the copy of React that ships with WordPress, and does not bundle its own.
