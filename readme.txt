@@ -82,6 +82,9 @@ The player script in `assets/dist/` is built from the TypeScript and React sourc
 
 == Changelog ==
 
+= 1.9.2 =
+* Fix: on Breeze sites (Cloudways), a post's page is now also cleared from Varnish right away when its audio status changes. Before, Varnish could keep serving an old copy without the player.
+
 = 1.9.1 =
 * Fix: changing the player position, colour, API key or EchoAds URL in Settings > EchoAds now clears the site's page cache, so visitors see the change right away instead of cached pages with the old player.
 

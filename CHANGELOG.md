@@ -6,7 +6,6 @@
 ### 🐛 Bug Fixes
 
 * **cache:** send Breeze's Varnish purge for a post right away ([56b1172](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/56b11727d5b1791e95f5d636dcd0783c2bab9d9f))
-* **cache:** send Breeze's Varnish purge for a post right away ([fe7e6d9](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/fe7e6d9767c0ec761b0b6acca1656f69df2c6ff0))
 
 ## [1.9.1](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.9.0...v1.9.1) (2026-11-20)
 
