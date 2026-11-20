@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.3](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.9.2...v1.9.3) (2026-11-20)
+
+
+### 🐛 Bug Fixes
+
+* **cache:** purge Cloudways Varnish directly when Breeze isn't active ([b2ce51d](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/b2ce51d419e250fdaa5b8c6009b2fcd95f7b5c88))
+
 ## [1.9.2](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.9.1...v1.9.2) (2026-11-20)
 
 
