@@ -6,7 +6,6 @@
 ### ✨ Features
 
 * **cache:** clear a post's cached page when its audio status changes ([1ab3da1](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/1ab3da12909847b836ea48558d06a4487a4e384f))
-* **cache:** clear a post's cached page when its audio status changes ([02dfc10](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/02dfc100bea26e32ad11bad157c81f5eaee6aa01))
 
 ## [1.8.1](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.8.0...v1.8.1) (2026-11-19)
 
