@@ -82,6 +82,9 @@ The player script in `assets/dist/` is built from the TypeScript and React sourc
 
 == Changelog ==
 
+= 1.9.0 =
+* New: when a post's audio status changes (sent, ready, or no longer available), the plugin clears that post's cached page, so visitors see the player right away instead of an old cached copy. Works with Breeze (including Cloudways Varnish and Cloudflare), LiteSpeed Cache, WP Rocket, W3 Total Cache, WP Super Cache, WP Fastest Cache, Cache Enabler, Hummingbird, SiteGround Optimizer, Nginx Helper, Proxy Cache Purge and WP Engine.
+
 = 1.8.1 =
 * Fix: a post whose audio EchoAds can't find, for example an English post sent before English was added in EchoAds, no longer stays "in progress" with "Failed to fetch audio status". It shows "No audio in EchoAds for this post" with a Generate Audio button.
 
@@ -115,6 +118,9 @@ The player script in `assets/dist/` is built from the TypeScript and React sourc
 * Fix: queued posts are sent when WP-Cron can't run.
 
 == Upgrade Notice ==
+
+= 1.9.0 =
+Posts' cached pages now update by themselves when their audio is ready. Pages cached before this update may need one last manual cache purge.
 
 = 1.8.0 =
 Adds multilingual support. On a multilingual site, add each language in your EchoAds dashboard so its posts get audio.

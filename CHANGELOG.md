@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.8.1...v1.9.0) (2026-11-20)
+
+
+### ✨ Features
+
+* **cache:** clear a post's cached page when its audio status changes ([1ab3da1](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/1ab3da12909847b836ea48558d06a4487a4e384f))
+
 ## [1.8.1](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.8.0...v1.8.1) (2026-11-19)
 
 
