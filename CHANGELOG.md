@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.9.0...v1.9.1) (2026-11-20)
+
+
+### 🐛 Bug Fixes
+
+* **cache:** clear the site's page cache when a player setting changes ([12cb3ba](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/12cb3ba1ced837bfc5193273ebfba39ab25b313c))
+
 ## [1.9.0](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.8.1...v1.9.0) (2026-11-20)
 
 

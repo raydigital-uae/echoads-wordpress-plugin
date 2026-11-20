@@ -82,6 +82,9 @@ The player script in `assets/dist/` is built from the TypeScript and React sourc
 
 == Changelog ==
 
+= 1.9.1 =
+* Fix: changing the player position, colour, API key or EchoAds URL in Settings > EchoAds now clears the site's page cache, so visitors see the change right away instead of cached pages with the old player.
+
 = 1.9.0 =
 * New: when a post's audio status changes (sent, ready, or no longer available), the plugin clears that post's cached page, so visitors see the player right away instead of an old cached copy. Works with Breeze (including Cloudways Varnish and Cloudflare), LiteSpeed Cache, WP Rocket, W3 Total Cache, WP Super Cache, WP Fastest Cache, Cache Enabler, Hummingbird, SiteGround Optimizer, Nginx Helper, Proxy Cache Purge and WP Engine.
 
