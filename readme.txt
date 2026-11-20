@@ -74,7 +74,7 @@ Yes, with Polylang or WPML. Each language is sent to EchoAds as a website of its
 
 Yes. The audio and ad links are loaded in the visitor's browser on every page view, so cached pages still show the latest audio.
 
-When a post's audio status changes (sent, ready, or no longer available), the plugin clears that post's cached page so visitors see the change right away. It works with Breeze (including Cloudways Varnish and Cloudflare), LiteSpeed Cache, WP Rocket, W3 Total Cache, WP Super Cache, WP Fastest Cache, Cache Enabler, Hummingbird, SiteGround Optimizer, Nginx Helper, Proxy Cache Purge and WP Engine. For any other cache, use the `echoads_purge_post_cache` action (post ID, URL) to clear it, or the `echoads_purge_page_cache` filter to turn this off.
+When a post's audio status changes (sent, ready, or no longer available), the plugin clears that post's cached page so visitors see the change right away. It works with Breeze (including Cloudways Varnish and Cloudflare), LiteSpeed Cache, WP Rocket, W3 Total Cache, WP Super Cache, WP Fastest Cache, Cache Enabler, Hummingbird, SiteGround Optimizer, Nginx Helper, Proxy Cache Purge and WP Engine. Changing the player position, colour, API key or EchoAds URL in Settings > EchoAds clears the whole site's page cache, because those settings are part of every player. For any other cache, use the `echoads_purge_post_cache` action (post ID, URL) and the `echoads_purge_all_cache` action to clear it, or the `echoads_purge_page_cache` and `echoads_purge_all_page_cache` filters to turn this off.
 
 == Source code ==
 
