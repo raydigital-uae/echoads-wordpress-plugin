@@ -6,7 +6,6 @@
 ### 🐛 Bug Fixes
 
 * **cache:** purge Cloudways Varnish directly when Breeze isn't active ([b2ce51d](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/b2ce51d419e250fdaa5b8c6009b2fcd95f7b5c88))
-* **cache:** purge Cloudways Varnish directly when Breeze isn't active ([4560d61](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/4560d61780dd9b6cda650be42e22ea9e4656b8bb))
 
 ## [1.9.2](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.9.1...v1.9.2) (2026-11-20)
 

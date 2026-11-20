@@ -82,6 +82,9 @@ The player script in `assets/dist/` is built from the TypeScript and React sourc
 
 == Changelog ==
 
+= 1.9.3 =
+* Fix: on Cloudways sites without Breeze (for example with WP Super Cache), the plugin now clears the server's Varnish itself when a post's audio status or a player setting changes. Before, visitors could keep getting an old cached page without the player.
+
 = 1.9.2 =
 * Fix: on Breeze sites (Cloudways), a post's page is now also cleared from Varnish right away when its audio status changes. Before, Varnish could keep serving an old copy without the player.
 
