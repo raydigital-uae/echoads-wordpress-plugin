@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.4](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.9.3...v1.9.4) (2026-11-23)
+
+
+### 🐛 Bug Fixes
+
+* validate Base URL as a URL and set AdvertOnClick as author ([99df33b](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/99df33b85216b2adf630e45cc9c2091e63553ee2))
+* validate Base URL as a URL and set AdvertOnClick as author ([743db6c](https://github.com/raydigital-uae/echoads-wordpress-plugin/commit/743db6ce29f537921df1436411584d9832d72a38))
+
 ## [1.9.3](https://github.com/raydigital-uae/echoads-wordpress-plugin/compare/v1.9.2...v1.9.3) (2026-11-20)
 
 
