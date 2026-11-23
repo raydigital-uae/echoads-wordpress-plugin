@@ -7,7 +7,8 @@ x-release-please-start-version
 x-release-please-end
  * Requires at least: 6.6
  * Requires PHP:      7.4
- * Author:            Hussein Shaltout
+ * Author:            AdvertOnClick
+ * Author URI:        https://advertonclick.com
  * License:           GPLv2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       echoads-audio-player

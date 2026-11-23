@@ -1,10 +1,10 @@
 === EchoAds Audio Player ===
-Contributors: amirhamdani
+Contributors: echoads, amirhamdani
 Tags: audio, text to speech, podcast, audio ads, monetization
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.6.1
+Stable tag: 1.9.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Turn every post into an audio article with a built-in player and pre-roll and po
 
 == Description ==
 
-EchoAds Audio Player connects your WordPress site to the EchoAds platform. When you publish a post, the plugin sends it to EchoAds, which generates a narrated audio version. Once the audio is ready, a player appears above or below the article so readers can listen instead of read.
+EchoAds Audio Player connects your WordPress site to EchoAds, an audio article and audio advertising platform by AdvertOnClick. When you publish a post, the plugin sends it to EchoAds, which generates a narrated audio version. Once the audio is ready, a player appears above or below the article so readers can listen instead of read.
 
 EchoAds can play a short audio ad before and after the article. Ads are chosen for each listener by the EchoAds service.
 

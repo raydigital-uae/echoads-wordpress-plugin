@@ -337,7 +337,7 @@ class EchoAds_Settings {
         ) );
         register_setting( self::SETTINGS_GROUP, self::OPTION_BASE_URL, array(
             'type'              => 'string',
-            'sanitize_callback' => array( __CLASS__, 'sanitize_base_url' ),
+            'sanitize_callback' => array( __CLASS__, 'sanitize_base_url_setting' ),
         ) );
         register_setting( self::SETTINGS_GROUP, self::OPTION_TIMEOUT, array(
             'type'              => 'integer',
@@ -356,11 +356,49 @@ class EchoAds_Settings {
         ) );
     }
 
+    /**
+     * Cleans a Base URL and returns it without protocol or trailing slash
+     * (https:// is added when the URL is used). Returns '' if it is not a valid URL.
+     *
+     * @param string $value Base URL, with or without https://.
+     * @return string
+     */
     public static function sanitize_base_url( $value ) {
-        $value = sanitize_text_field( (string) $value );
-        // Stored without protocol or trailing slash; https:// is added when the URL is used.
-        $value = preg_replace( '#^https?://#i', '', $value );
-        return rtrim( $value, '/' );
+        $value = trim( sanitize_text_field( (string) $value ) );
+        $value = rtrim( preg_replace( '#^https?://#i', '', $value ), '/' );
+        if ( '' === $value ) {
+            return '';
+        }
+
+        $url = esc_url_raw( 'https://' . $value, array( 'https' ) );
+        if ( '' === $url || false === filter_var( $url, FILTER_VALIDATE_URL ) || ! wp_parse_url( $url, PHP_URL_HOST ) ) {
+            return '';
+        }
+
+        return rtrim( substr( $url, strlen( 'https://' ) ), '/' );
+    }
+
+    /**
+     * Sanitize callback for the Base URL setting. Keeps the saved value and shows
+     * an error when the new value is not a valid URL.
+     *
+     * @param string $value Submitted Base URL.
+     * @return string
+     */
+    public static function sanitize_base_url_setting( $value ) {
+        $submitted = trim( sanitize_text_field( (string) $value ) );
+        $sanitized = self::sanitize_base_url( $submitted );
+
+        if ( '' !== $submitted && '' === $sanitized ) {
+            add_settings_error(
+                self::OPTION_BASE_URL,
+                'echoads_invalid_base_url',
+                __( 'The Base URL is not a valid URL, so it was not changed.', 'echoads-audio-player' )
+            );
+            return self::get_base_url();
+        }
+
+        return $sanitized;
     }
 
     public static function sanitize_timeout( $value ) {
